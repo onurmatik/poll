@@ -1,0 +1,15 @@
+boto3
+django
+django-storages
+django-recaptcha
+django-debug-toolbar
+django-ses[events]
+django-sesame
+django-widget-tweaks
+django-ninja
+gunicorn
+python-slugify
+openai
+openai-agents
+python-dotenv
+markdown
