@@ -1,0 +1,7 @@
+!.gitignore
+.*
+__pycache__/
+*.sqlite3
+*.py[cod]
+media/
+cache/
