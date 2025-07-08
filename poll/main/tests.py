@@ -1,6 +1,8 @@
 from django.test import TestCase
 
-from .models import Question
+from unittest.mock import Mock, patch
+
+from .models import Question, OpenAIBatch
 
 
 class QuestionModelTests(TestCase):
@@ -21,3 +23,28 @@ class QuestionModelTests(TestCase):
             choices=["A", "A", "B"],
         )
         self.assertEqual(q.choice_pairs(), [{"A": "A", "B": "B"}])
+
+
+class OpenAIBatchModelTests(TestCase):
+    def test_retrieve_results(self):
+        q = Question.objects.create(template="dummy", choices=["A", "B"])
+        batch = OpenAIBatch.objects.create(
+            question=q,
+            batch_id="batch_1",
+            status="completed",
+            output_file_id="file_123",
+        )
+
+        fake_content = (
+            '{"id": "batch_req_1", "custom_id": "c1"}\n'
+            '{"id": "batch_req_2", "custom_id": "c2"}\n'
+        )
+
+        mock_client = Mock()
+        mock_client.files.content.return_value = Mock(text=fake_content)
+
+        with patch("poll.main.models.openai.OpenAI", return_value=mock_client):
+            results = batch.retrieve_results()
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["custom_id"], "c1")

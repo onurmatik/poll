@@ -76,7 +76,7 @@ class Question(models.Model):
         >>> q.choice_pairs()
         [{"A": "Turkey", "B": "Mexico"}, {"A": "Turkey", "B": "Germany"}, {"A": "Mexico", "B": "Germany"}]
         """
-        items = self.choices or []
+        items = list(dict.fromkeys(self.choices or []))
 
         if len(items) < 2:
             return []
@@ -200,3 +200,26 @@ class OpenAIBatch(models.Model):
         self.errors = batch.errors
         self.output_file_id = batch.output_file_id
         self.save()
+
+    def retrieve_results(self) -> List[dict]:
+        """Download and parse the batch output file.
+
+        Returns
+        -------
+        list[dict]
+            Parsed JSON entries from the output file. An empty list is
+            returned if ``output_file_id`` is not available.
+        """
+        if not self.output_file_id:
+            return []
+
+        client = openai.OpenAI()
+        file_response = client.files.content(self.output_file_id)
+
+        results = []
+        for line in file_response.text.splitlines():
+            line = line.strip()
+            if line:
+                results.append(json.loads(line))
+
+        return results
