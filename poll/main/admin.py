@@ -19,13 +19,13 @@ def download_batch_prompt_csv(modeladmin, request, queryset):
         rendered_questions = question.render_all_questions()
         pairs = question.choice_pairs()
         for rendered, ctx in rendered_questions:
-            for choice_a, choice_b in pairs:
+            for pair in pairs:
                 writer.writerow(
                     {
                         "question_id": question.pk,
                         "question": rendered,
-                        "choice_a": choice_a,
-                        "choice_b": choice_b,
+                        "choice_a": pair["A"],
+                        "choice_b": pair["B"],
                         "context": json.dumps(ctx, ensure_ascii=False),
                     }
                 )

@@ -1,5 +1,5 @@
 from itertools import product, combinations, permutations
-from typing import List, Tuple
+from typing import List, Dict
 
 from django.db import models
 from django.template import Template, Context
@@ -56,7 +56,7 @@ class Question(models.Model):
 
         return results
 
-    def choice_pairs(self, *, ordered: bool = False, deduplicate: bool = True) -> List[Tuple[str, str]]:
+    def choice_pairs(self, *, ordered: bool = False, deduplicate: bool = True) -> List[Dict[str, str]]:
         """
         Return every pair of items that can be formed from ``self.choices``.
 
@@ -76,20 +76,21 @@ class Question(models.Model):
 
         Returns
         -------
-        list[tuple[str, str]]
-            A list of 2‑tuples, each representing one pair.
+        list[dict[str, str]]
+            A list of dictionaries mapping ``"A"`` and ``"B"`` to the paired
+            items.
 
         Examples
         --------
         >>> q.choices
         ['Turkey', 'Mexico', 'Germany']
         >>> q.choice_pairs()
-        [('Turkey', 'Mexico'), ('Turkey', 'Germany'), ('Mexico', 'Germany')]
+        [{'A': 'Turkey', 'B': 'Mexico'}, {'A': 'Turkey', 'B': 'Germany'}, {'A': 'Mexico', 'B': 'Germany'}]
 
         >>> q.choice_pairs(ordered=True)
-        [('Turkey', 'Mexico'), ('Turkey', 'Germany'),
-         ('Mexico', 'Turkey'), ('Mexico', 'Germany'),
-         ('Germany', 'Turkey'), ('Germany', 'Mexico')]
+        [{'A': 'Turkey', 'B': 'Mexico'}, {'A': 'Turkey', 'B': 'Germany'},
+         {'A': 'Mexico', 'B': 'Turkey'}, {'A': 'Mexico', 'B': 'Germany'},
+         {'A': 'Germany', 'B': 'Turkey'}, {'A': 'Germany', 'B': 'Mexico'}]
         """
         items = self.choices or []
         if deduplicate:
@@ -100,11 +101,14 @@ class Question(models.Model):
             return []
 
         pair_iter = permutations(items, 2) if ordered else combinations(items, 2)
-        return list(pair_iter)
+        return [{"A": a, "B": b} for a, b in pair_iter]
 
 
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     context = models.JSONField(default=dict)  # {'country': 'Turkey', 'gender': 'man'}
-    choices = models.JSONField(default=list)  # ['Turkey', 'Mexico']
-    choice = models.CharField(max_length=500)  # 'Turkey'
+    choices = models.JSONField(default=dict)  # {"A": "Turkey", "B": "Mexico"}
+    choice = models.CharField(
+        max_length=1,
+        choices=[(c, c) for c in ["A", "B"]],
+    )  # "A"
