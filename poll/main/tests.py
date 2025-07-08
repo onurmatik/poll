@@ -1,23 +1,23 @@
 from django.test import TestCase
-from django.urls import reverse
 
-from .models import Question, Choice
+from .models import Question
 
 
-class PollsIndexViewTests(TestCase):
-    def test_no_questions(self):
-        response = self.client.get(reverse('polls:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'No polls are available.')
-        self.assertQuerySetEqual(response.context['latest_question_list'], [])
-
-    def test_question_display(self):
-        question = Question.objects.create(question_text='Who?', pub_date='2024-01-01T00:00')
-        response = self.client.get(reverse('polls:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, question.question_text)
-        self.assertQuerySetEqual(
-            response.context['latest_question_list'],
-            [question],
-            transform=lambda x: x,
+class QuestionModelTests(TestCase):
+    def test_render_all_questions(self):
+        q = Question.objects.create(
+            template="Where would a {{ gender }} move?",
+            context={"gender": ["man", "woman"]},
         )
+        expected = [
+            ("Where would a man move?", {"gender": "man"}),
+            ("Where would a woman move?", {"gender": "woman"}),
+        ]
+        self.assertEqual(q.render_all_questions(), expected)
+
+    def test_choice_pairs_deduplicated(self):
+        q = Question.objects.create(
+            template="dummy",
+            choices=["A", "A", "B"],
+        )
+        self.assertEqual(q.choice_pairs(), [("A", "B")])
