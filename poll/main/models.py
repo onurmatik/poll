@@ -112,3 +112,12 @@ class Answer(models.Model):
         max_length=1,
         choices=[(c, c) for c in ["A", "B"]],
     )  # "A"
+
+
+class OpenAIBatch(models.Model):
+    batch_id = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    questions = models.ManyToManyField(Question, related_name="openai_batches")
+
+    def __str__(self) -> str:
+        return self.batch_id
