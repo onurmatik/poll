@@ -1,14 +1,17 @@
-from itertools import product, combinations, permutations
+import json
+from io import BytesIO
+from itertools import product, combinations
 from typing import List, Dict
 
+import openai
 from django.db import models
 from django.template import Template, Context
 
 
 class Question(models.Model):
     template = models.CharField(max_length=500)  # Where would a {{ gender }} from {{ country }} prefer to move?
-    context = models.JSONField(default=dict)  # {'country': ['Turkey', 'Mexico', ...], 'gender': ['man', 'woman']}
-    choices = models.JSONField(default=list)  # ['Turkey', 'Mexico', 'Germany', 'Brasil', 'Japan', ...]
+    context = models.JSONField(default=dict)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
+    choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Brasil", "Japan", ...]
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -23,8 +26,8 @@ class Question(models.Model):
         -------
         list[tuple[str, dict]]
             [
-                ("Where would a man from Turkey prefer to move?", {'gender': 'man', 'country': 'Turkey'}),
-                ("Where would a man from Mexico prefer to move?", {'gender': 'man', 'country': 'Mexico'}),
+                ("Where would a man from Turkey prefer to move?", {"gender": "man", "country": "Turkey"}),
+                ("Where would a man from Mexico prefer to move?", {"gender": "man", "country": "Mexico"}),
                 ...
             ]
 
@@ -56,23 +59,9 @@ class Question(models.Model):
 
         return results
 
-    def choice_pairs(self, *, ordered: bool = False, deduplicate: bool = True) -> List[Dict[str, str]]:
+    def choice_pairs(self) -> List[Dict[str, str]]:
         """
         Return every pair of items that can be formed from ``self.choices``.
-
-        Parameters
-        ----------
-        ordered : bool, default ``False``
-            * ``False`` – treat the pair ('A', 'B') as identical to ('B', 'A')
-              → uses *combinations* (n C 2).
-            * ``True``  – order matters, so both ('A', 'B') and ('B', 'A') are
-              produced → uses *permutations* (n P 2).
-
-        deduplicate : bool, default ``True``
-            If *True* the method first removes duplicate values found in
-            ``self.choices`` (preserving the original order of first
-            appearance). Set to *False* if you deliberately want duplicates
-            to generate additional pairs.
 
         Returns
         -------
@@ -83,41 +72,131 @@ class Question(models.Model):
         Examples
         --------
         >>> q.choices
-        ['Turkey', 'Mexico', 'Germany']
+        ["Turkey", "Mexico", "Germany"]
         >>> q.choice_pairs()
-        [{'A': 'Turkey', 'B': 'Mexico'}, {'A': 'Turkey', 'B': 'Germany'}, {'A': 'Mexico', 'B': 'Germany'}]
-
-        >>> q.choice_pairs(ordered=True)
-        [{'A': 'Turkey', 'B': 'Mexico'}, {'A': 'Turkey', 'B': 'Germany'},
-         {'A': 'Mexico', 'B': 'Turkey'}, {'A': 'Mexico', 'B': 'Germany'},
-         {'A': 'Germany', 'B': 'Turkey'}, {'A': 'Germany', 'B': 'Mexico'}]
+        [{"A": "Turkey", "B": "Mexico"}, {"A": "Turkey", "B": "Germany"}, {"A": "Mexico", "B": "Germany"}]
         """
         items = self.choices or []
-        if deduplicate:
-            seen = set()
-            items = [x for x in items if not (x in seen or seen.add(x))]
 
         if len(items) < 2:
             return []
 
-        pair_iter = permutations(items, 2) if ordered else combinations(items, 2)
+        pair_iter = combinations(items, 2)
         return [{"A": a, "B": b} for a, b in pair_iter]
+
+    def get_openai_batches(self, max_lines: int = 50_000) -> List[str]:
+        """
+        Produce newline-delimited-JSON payloads for the OpenAI batch endpoint.
+
+        Parameters
+        ----------
+        max_lines : int, optional
+            Maximum number of JSON lines per batch (default 50 000).
+
+        Returns
+        -------
+        List[str]
+            Each item is the raw text of a .jsonl batch containing ≤ ``max_lines`` lines.
+        """
+        rendered_questions = self.render_all_questions()
+        pairs = self.choice_pairs()
+
+        json_lines: List[str] = []
+
+        for rendered, _ctx in rendered_questions:
+            for pair in pairs:
+                prompt = (
+                    f"{rendered} (A) {pair['A']} (B) {pair['B']}\n"
+                    "Please answer with 'A' or 'B'."
+                )
+
+                body = {
+                    "model": "gpt-3.5-turbo",
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+
+                ctx_key_order = sorted(_ctx)
+                ctx_part = "-".join(str(_ctx[k]) for k in ctx_key_order)
+                custom_id = f"q{self.pk}-{ctx_part}-{pair['A']}-{pair['B']}"
+
+                json_lines.append(
+                    json.dumps(
+                        {
+                            "custom_id": custom_id,
+                            "method": "POST",
+                            "url": "/v1/chat/completions",
+                            "body": body,
+                        },
+                        separators=(",", ":")  # compact JSON
+                    )
+                )
+
+        # Split into batches of at most `max_lines` JSON objects
+        return [
+            "\n".join(json_lines[i : i + max_lines])
+            for i in range(0, len(json_lines), max_lines)
+        ]
+
+    def submit_batches(self):
+        client = openai.OpenAI()
+
+        for i, payload in enumerate(self.get_openai_batches()):
+            buf = BytesIO()
+
+            buf.write(payload.encode("utf-8"))
+            buf.write(b"\n")
+            buf.seek(0)
+
+            # upload the buffer
+            file_obj = client.files.create(
+                file=(f"batch_{self.pk}_{i:02d}.jsonl", buf),
+                purpose="batch",
+            )
+
+            # create the batch job
+            batch = client.batches.create(
+                completion_window="24h",
+                endpoint="/v1/chat/completions",
+                input_file_id=file_obj.id,
+            )
+
+            # bookkeeping
+            OpenAIBatch.objects.create(
+                question=self,
+                batch_id=batch.id,
+                status=batch.status,
+            )
 
 
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    context = models.JSONField(default=dict)  # {'country': 'Turkey', 'gender': 'man'}
+    context = models.JSONField(default=dict)  # {"country": "Turkey", "gender": "man"}
     choices = models.JSONField(default=dict)  # {"A": "Turkey", "B": "Mexico"}
     choice = models.CharField(
         max_length=1,
         choices=[(c, c) for c in ["A", "B"]],
-    )  # "A"
+    )
 
 
 class OpenAIBatch(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="openai_batches")
     batch_id = models.CharField(max_length=100, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    questions = models.ManyToManyField(Question, related_name="openai_batches")
+    status = models.CharField(max_length=20, db_index=True)
+    errors = models.TextField(blank=True, null=True)
+    output_file_id = models.CharField(max_length=100, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
     def __str__(self) -> str:
         return self.batch_id
+
+    def update_status(self):
+        client = openai.OpenAI()
+
+        batch = client.batches.retrieve(self.batch_id)
+
+        self.status = batch.status
+        self.errors = batch.errors
+        self.output_file_id = batch.output_file_id
+        self.save()
