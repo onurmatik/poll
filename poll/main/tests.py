@@ -20,4 +20,4 @@ class QuestionModelTests(TestCase):
             template="dummy",
             choices=["A", "A", "B"],
         )
-        self.assertEqual(q.choice_pairs(), [("A", "B")])
+        self.assertEqual(q.choice_pairs(), [{"A": "A", "B": "B"}])
