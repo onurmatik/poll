@@ -2,8 +2,11 @@ from django.contrib import admin
 from django.http import HttpResponse
 import csv
 import json
+import tempfile
+import openai
+from django.contrib import messages
 
-from .models import Question, Answer
+from .models import Question, Answer, OpenAIBatch
 
 
 @admin.action(description="Download batch prompt CSV")
@@ -63,12 +66,63 @@ def download_openai_batch_jsonl(modeladmin, request, queryset):
     return response
 
 
+@admin.action(description="Submit OpenAI batch")
+def submit_openai_batch(modeladmin, request, queryset):
+    """Upload JSONL batch to OpenAI and store batch ID."""
+    client = openai.OpenAI()
+    with tempfile.NamedTemporaryFile("w+", suffix=".jsonl") as tmp:
+        for question in queryset:
+            rendered_questions = question.render_all_questions()
+            pairs = question.choice_pairs()
+            for rendered, ctx in rendered_questions:
+                for pair in pairs:
+                    prompt = (
+                        f"{rendered} (A) {pair['A']} (B) {pair['B']}\n"
+                        "Please answer with 'A' or 'B'."
+                    )
+                    body = {
+                        "model": "gpt-3.5-turbo",
+                        "messages": [{"role": "user", "content": prompt}],
+                    }
+                    batch_obj = {
+                        "custom_id": f"q{question.pk}-{pair['A']}-{pair['B']}",
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": body,
+                    }
+                    tmp.write(json.dumps(batch_obj, ensure_ascii=False) + "\n")
+
+        tmp.flush()
+        tmp.seek(0)
+        with open(tmp.name, "rb") as f:
+            file_obj = client.files.create(file=f, purpose="batch")
+        batch = client.batches.create(
+            completion_window="24h",
+            endpoint="/v1/chat/completions",
+            input_file_id=file_obj.id,
+        )
+
+    obatch = OpenAIBatch.objects.create(batch_id=batch.id)
+    obatch.questions.set(queryset)
+    messages.success(request, f"Created OpenAI batch {batch.id}")
+
+
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ["template", "created_at"]
-    actions = [download_batch_prompt_csv, download_openai_batch_jsonl]
+    actions = [
+        download_batch_prompt_csv,
+        download_openai_batch_jsonl,
+        submit_openai_batch,
+    ]
 
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
     list_display = ["question", "choice"]
+
+
+@admin.register(OpenAIBatch)
+class OpenAIBatchAdmin(admin.ModelAdmin):
+    list_display = ["batch_id", "created_at"]
+    filter_horizontal = ["questions"]
