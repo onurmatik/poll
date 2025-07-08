@@ -33,10 +33,40 @@ def download_batch_prompt_csv(modeladmin, request, queryset):
     return response
 
 
+@admin.action(description="Download OpenAI batch JSONL")
+def download_openai_batch_jsonl(modeladmin, request, queryset):
+    """Return a JSONL file compatible with the OpenAI Batch API."""
+    response = HttpResponse(content_type="application/json")
+    response["Content-Disposition"] = "attachment; filename=openai_batch.jsonl"
+
+    for question in queryset:
+        rendered_questions = question.render_all_questions()
+        pairs = question.choice_pairs()
+        for rendered, ctx in rendered_questions:
+            for pair in pairs:
+                prompt = (
+                    f"{rendered} (A) {pair['A']} (B) {pair['B']}\n"
+                    "Please answer with 'A' or 'B'."
+                )
+                body = {
+                    "model": "gpt-3.5-turbo",
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                batch_obj = {
+                    "custom_id": f"q{question.pk}-{pair['A']}-{pair['B']}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": body,
+                }
+                response.write(json.dumps(batch_obj, ensure_ascii=False) + "\n")
+
+    return response
+
+
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ["template", "created_at"]
-    actions = [download_batch_prompt_csv]
+    actions = [download_batch_prompt_csv, download_openai_batch_jsonl]
 
 
 @admin.register(Answer)
