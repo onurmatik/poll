@@ -4,8 +4,9 @@ from itertools import product, combinations
 from typing import List, Dict, Literal
 
 import uuid
-from pydantic import BaseModel, confloat
 import openai
+from pydantic import BaseModel, confloat
+from openai.lib._pydantic import to_strict_json_schema
 from django.db import models
 from django.template import Template, Context
 
@@ -22,7 +23,7 @@ class ABResponse(BaseModel):
     confidence: confloat(ge=0, le=1)
 
 
-AB_RESPONSE_SCHEMA = ABResponse.model_json_schema()
+AB_RESPONSE_SCHEMA = to_strict_json_schema(ABResponse)
 
 
 class Question(models.Model):
@@ -195,18 +196,6 @@ class Question(models.Model):
             )
 
 
-class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    run_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
-    context = models.JSONField(default=dict)  # {"country": "Turkey", "gender": "man"}
-    choices = models.JSONField(default=dict)  # {"A": "Turkey", "B": "Mexico"}
-    choice = models.CharField(
-        max_length=1,
-        choices=[(c, c) for c in ["A", "B"]],
-    )
-    confidence = models.FloatField(null=True, blank=True)
-
-
 class OpenAIBatch(models.Model):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="openai_batches"
@@ -232,6 +221,9 @@ class OpenAIBatch(models.Model):
     @property
     def error_file_id(self) -> str | None:
         return self.data.get("error_file_id")
+
+    class Meta:
+        verbose_name_plural = "OpenAI Batches"
 
     def __str__(self) -> str:
         return self.batch_id or "unknown"
@@ -267,3 +259,15 @@ class OpenAIBatch(models.Model):
         print(results)
 
         return results
+
+
+class Answer(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    run_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
+    context = models.JSONField(default=dict)  # {"country": "Turkey", "gender": "man"}
+    choices = models.JSONField(default=dict)  # {"A": "Turkey", "B": "Mexico"}
+    choice = models.CharField(
+        max_length=1,
+        choices=[(c, c) for c in ["A", "B"]],
+    )
+    confidence = models.FloatField(null=True, blank=True)
