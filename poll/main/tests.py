@@ -57,26 +57,46 @@ class QuestionModelTests(TestCase):
 
 
 class OpenAIBatchModelTests(TestCase):
-    def test_retrieve_results(self):
-        q = Question.objects.create(template="dummy", choices=["A", "B"])
+    def test_retrieve_results_creates_answers(self):
+        q = Question.objects.create(
+            template="Where would a {{ gender }} from {{ country }} prefer to move?",
+            context={"country": ["Turkey"], "gender": ["man"]},
+            choices=["Turkey", "Mexico"],
+        )
+
         batch = OpenAIBatch.objects.create(
             question=q,
             data={"id": "batch_1", "status": "completed", "output_file_id": "file_123"},
         )
 
-        fake_content = (
-            '{"id": "batch_req_1", "custom_id": "c1"}\n'
-            '{"id": "batch_req_2", "custom_id": "c2"}\n'
-        )
+        result_line = json.dumps({
+            "id": "batch_req_1",
+            "custom_id": "q1-Turkey-man-Turkey-Mexico",
+            "response": {
+                "status_code": 200,
+                "body": {
+                    "choices": [{
+                        "message": {"content": "{\"answer\":\"A\",\"confidence\":0.75}"}
+                    }]
+                }
+            },
+        })
 
         mock_client = Mock()
-        mock_client.files.content.return_value = Mock(text=fake_content)
+        mock_client.files.content.return_value = Mock(text=result_line + "\n")
 
         with patch("poll.main.models.openai.OpenAI", return_value=mock_client):
             results = batch.retrieve_results()
 
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0]["custom_id"], "c1")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(Answer.objects.count(), 1)
+        answer = Answer.objects.first()
+        self.assertEqual(answer.question, q)
+        self.assertEqual(answer.run_id, batch.run_id)
+        self.assertEqual(answer.context, {"country": "Turkey", "gender": "man"})
+        self.assertEqual(answer.choices, {"A": "Turkey", "B": "Mexico"})
+        self.assertEqual(answer.choice, "A")
+        self.assertAlmostEqual(answer.confidence, 0.75)
 
 
 class QuestionDetailViewTests(TestCase):

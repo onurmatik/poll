@@ -254,9 +254,63 @@ class OpenAIBatch(models.Model):
         for line in file_response.text.splitlines():
             line = line.strip()
             if line:
-                results.append(json.loads(line))
+                entry = json.loads(line)
+                results.append(entry)
 
-        print(results)
+                custom_id = entry.get("custom_id", "")
+                parts = custom_id.split("-")
+
+                # Expect: q<id>-<ctx values...>-<A>-<B>
+                if not parts or not parts[0].startswith("q"):
+                    continue
+
+                try:
+                    question_id = int(parts[0][1:])
+                except ValueError:
+                    continue
+
+                try:
+                    question = Question.objects.get(pk=question_id)
+                except Question.DoesNotExist:
+                    continue
+
+                ctx_keys = sorted(question.context.keys())
+                ctx_values = parts[1 : 1 + len(ctx_keys)]
+                context = dict(zip(ctx_keys, ctx_values))
+
+                try:
+                    choice_a = parts[1 + len(ctx_keys)]
+                    choice_b = parts[2 + len(ctx_keys)]
+                except IndexError:
+                    continue
+
+                choices = {"A": choice_a, "B": choice_b}
+
+                # Extract answer and confidence from response body
+                body = (
+                    entry.get("response", {})
+                    .get("body", {})
+                )
+                message = None
+                if body:
+                    choices_resp = body.get("choices", [])
+                    if choices_resp:
+                        message = choices_resp[0].get("message", {})
+
+                try:
+                    content = message.get("content", "") if message else ""
+                    parsed = json.loads(content) if content else {}
+                except json.JSONDecodeError:
+                    parsed = {}
+
+                Answer.objects.create(
+                    question=question,
+                    run_id=self.run_id,
+                    context=context,
+                    choices=choices,
+                    choice=parsed.get("answer"),
+                    confidence=parsed.get("confidence"),
+                )
 
         return results
 
