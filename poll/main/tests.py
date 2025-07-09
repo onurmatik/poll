@@ -32,10 +32,10 @@ class QuestionModelTests(TestCase):
         line = batches[0].splitlines()[0]
         payload = json.loads(line)
         response_format = payload["body"]["response_format"]
-        self.assertEqual(
-            response_format["schema"]["properties"]["answer"]["enum"],
-            ["A", "B"],
-        )
+        schema_props = response_format["schema"]["properties"]
+        self.assertEqual(schema_props["answer"]["enum"], ["A", "B"])
+        self.assertIn("confidence", schema_props)
+        self.assertEqual(schema_props["confidence"]["type"], "number")
 
 
 class OpenAIBatchModelTests(TestCase):

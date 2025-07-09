@@ -3,11 +3,12 @@ from io import BytesIO
 from itertools import product, combinations
 from typing import List, Dict, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, confloat
 
 
 class ABResponse(BaseModel):
     answer: Literal["A", "B"]
+    confidence: confloat(ge=0, le=1)
 
 
 AB_RESPONSE_SCHEMA = ABResponse.model_json_schema()
@@ -186,6 +187,7 @@ class Answer(models.Model):
         max_length=1,
         choices=[(c, c) for c in ["A", "B"]],
     )
+    confidence = models.FloatField(null=True, blank=True)
 
 
 class OpenAIBatch(models.Model):
