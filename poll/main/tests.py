@@ -3,7 +3,9 @@ import json
 
 from unittest.mock import Mock, patch
 
-from .models import Question, OpenAIBatch
+from django.urls import reverse
+
+from .models import Question, OpenAIBatch, Answer
 
 
 class QuestionModelTests(TestCase):
@@ -32,7 +34,7 @@ class QuestionModelTests(TestCase):
         line = batches[0].splitlines()[0]
         payload = json.loads(line)
         response_format = payload["body"]["response_format"]
-        schema_props = response_format["schema"]["properties"]
+        schema_props = response_format["json_schema"]["schema"]["properties"]
         self.assertEqual(schema_props["answer"]["enum"], ["A", "B"])
         self.assertIn("confidence", schema_props)
         self.assertEqual(schema_props["confidence"]["type"], "number")
@@ -61,3 +63,22 @@ class OpenAIBatchModelTests(TestCase):
 
         self.assertEqual(len(results), 2)
         self.assertEqual(results[0]["custom_id"], "c1")
+
+
+class QuestionDetailViewTests(TestCase):
+    def test_question_detail_view(self):
+        q = Question.objects.create(template="example", choices=["A", "B"])
+        Answer.objects.create(
+            question=q,
+            context={},
+            choices={"A": "A", "B": "B"},
+            choice="A",
+        )
+
+        url = reverse("polls:question_detail", args=[q.uuid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["question"], q)
+        self.assertEqual(response.context["num_variations"], 1)
+        self.assertEqual(response.context["total_queries"], 1)
