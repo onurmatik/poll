@@ -20,12 +20,12 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
-    list_display = ["question", "choice"]
+    list_display = ["question", "choice", "run_id"]
 
 
 @admin.register(OpenAIBatch)
 class OpenAIBatchAdmin(admin.ModelAdmin):
-    list_display = ["batch_id", "status", "created_at", "updated_at"]
+    list_display = ["batch_id", "status", "run_id", "created_at", "updated_at"]
     actions = [
         'update_status',
         'retrieve_results'

@@ -165,6 +165,8 @@ class Question(models.Model):
     def submit_batches(self):
         client = openai.OpenAI()
 
+        run_id = uuid.uuid4()
+
         for i, payload in enumerate(self.get_openai_batches()):
             buf = BytesIO()
 
@@ -188,12 +190,14 @@ class Question(models.Model):
             # bookkeeping - store the full response object as JSON
             OpenAIBatch.objects.create(
                 question=self,
+                run_id=run_id,
                 data=batch.model_dump(),
             )
 
 
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    run_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     context = models.JSONField(default=dict)  # {"country": "Turkey", "gender": "man"}
     choices = models.JSONField(default=dict)  # {"A": "Turkey", "B": "Mexico"}
     choice = models.CharField(
@@ -207,6 +211,7 @@ class OpenAIBatch(models.Model):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="openai_batches"
     )
+    run_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     data = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

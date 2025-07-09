@@ -39,6 +39,22 @@ class QuestionModelTests(TestCase):
         self.assertIn("confidence", schema_props)
         self.assertEqual(schema_props["confidence"]["type"], "number")
 
+    def test_submit_batches_assigns_single_run_id(self):
+        q = Question.objects.create(template="q", choices=["A", "B"])
+        mock_client = Mock()
+        mock_client.files.create.return_value = Mock(id="file_1")
+        mock_client.batches.create.return_value = Mock(model_dump=Mock(return_value={"id": "batch_1"}))
+
+        with patch("poll.main.models.openai.OpenAI", return_value=mock_client):
+            with patch.object(Question, "get_openai_batches", return_value=["d1", "d2"]):
+                q.submit_batches()
+
+        batches = list(OpenAIBatch.objects.filter(question=q))
+        self.assertEqual(len(batches), 2)
+        run_ids = {b.run_id for b in batches}
+        self.assertEqual(len(run_ids), 1)
+
+
 
 class OpenAIBatchModelTests(TestCase):
     def test_retrieve_results(self):
@@ -66,12 +82,13 @@ class OpenAIBatchModelTests(TestCase):
 class QuestionDetailViewTests(TestCase):
     def test_question_detail_view(self):
         q = Question.objects.create(template="example", choices=["A", "B"])
-        Answer.objects.create(
+        a = Answer.objects.create(
             question=q,
             context={},
             choices={"A": "A", "B": "B"},
             choice="A",
         )
+        self.assertIsNotNone(a.run_id)
 
         url = reverse("polls:question_detail", args=[q.uuid])
         response = self.client.get(url)
