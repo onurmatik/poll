@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("main", "0008_openaibatch_output_file_id"),
+        ("main", "0009_openaibatch_error_file_id"),
     ]
 
     operations = [

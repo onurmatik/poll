@@ -3,27 +3,37 @@ from io import BytesIO
 from itertools import product, combinations
 from typing import List, Dict, Literal
 
+import uuid
 from pydantic import BaseModel, confloat
+import openai
+from django.db import models
+from django.template import Template, Context
 
 
 class ABResponse(BaseModel):
+    """Response model indicating a binary choice with confidence level.
+
+    Attributes:
+        answer (Literal["A", "B"]): The selected answer, either "A" or "B".
+        confidence (float): Confidence score for the selected answer, ranging from 0 to 1.
+    """
+
     answer: Literal["A", "B"]
     confidence: confloat(ge=0, le=1)
 
 
 AB_RESPONSE_SCHEMA = ABResponse.model_json_schema()
 
-import openai
-from django.db import models
-from django.template import Template, Context
-
 
 class Question(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     template = models.CharField(max_length=500)  # Where would a {{ gender }} from {{ country }} prefer to move?
     context = models.JSONField(default=dict)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
     choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Brasil", "Japan", ...]
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    archived = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.template
