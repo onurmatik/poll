@@ -1,4 +1,5 @@
 from django.test import TestCase
+import json
 
 from unittest.mock import Mock, patch
 
@@ -23,6 +24,18 @@ class QuestionModelTests(TestCase):
             choices=["A", "A", "B"],
         )
         self.assertEqual(q.choice_pairs(), [{"A": "A", "B": "B"}])
+
+    def test_get_openai_batches_contains_response_format(self):
+        q = Question.objects.create(template="q", choices=["A", "B"])
+        batches = q.get_openai_batches()
+        self.assertEqual(len(batches), 1)
+        line = batches[0].splitlines()[0]
+        payload = json.loads(line)
+        response_format = payload["body"]["response_format"]
+        self.assertEqual(
+            response_format["schema"]["properties"]["answer"]["enum"],
+            ["A", "B"],
+        )
 
 
 class OpenAIBatchModelTests(TestCase):
