@@ -20,7 +20,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
-    list_display = ["question", "choice", "run_id"]
+    list_display = ["rendered_question", "choice_a", "choice_b", "choice", "run_id"]
 
 
 @admin.register(OpenAIBatch)
