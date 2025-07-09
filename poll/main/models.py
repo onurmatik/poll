@@ -80,6 +80,11 @@ class Question(models.Model):
 
         return results
 
+    def render_question(self, context: dict) -> str:
+        """Render the template using the provided context."""
+        compiled_tmpl = Template(self.template)
+        return compiled_tmpl.render(Context(context))
+
     def choice_pairs(self) -> List[Dict[str, str]]:
         """
         Return every pair of items that can be formed from ``self.choices``.
@@ -325,3 +330,15 @@ class Answer(models.Model):
         choices=[(c, c) for c in ["A", "B"]],
     )
     confidence = models.FloatField(null=True, blank=True)
+
+    @property
+    def rendered_question(self) -> str:
+        return self.question.render_question(self.context)
+
+    @property
+    def choice_a(self) -> str:
+        return self.choices.get("A", "")
+
+    @property
+    def choice_b(self) -> str:
+        return self.choices.get("B", "")
