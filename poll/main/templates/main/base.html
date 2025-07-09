@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Poll{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQjaB40MUxC92+Jh4jB+Y88ef0qLj+AEAP9I1y5I5O2VJBr+74Cz2UqKw" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container py-4">
+      {% block content %}{% endblock %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-EMg2xO7ybL5JU+4EZIdzoPt60h5ASO69dN9dlywF2q8O9p6VR1oK6czSlsCwFgRr" crossorigin="anonymous"></script>
+  </body>
+</html>
