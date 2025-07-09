@@ -29,6 +29,7 @@ class OpenAIBatchAdmin(admin.ModelAdmin):
     list_filter = ["status"]
     actions = [
         'update_status',
+        'retrieve_results'
     ]
 
     def update_status(self, request, queryset):
@@ -36,3 +37,9 @@ class OpenAIBatchAdmin(admin.ModelAdmin):
             batch.update_status()
         messages.success(request, f"Batch statuses updated successfully")
     update_status.short_description = "Update batch statuses"
+
+    def retrieve_results(self, request, queryset):
+        for batch in queryset:
+            batch.retrieve_results()
+        messages.success(request, f"Batch results retrieved successfully")
+    retrieve_results.short_description = "Retrieve batch results"

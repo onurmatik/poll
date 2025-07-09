@@ -118,11 +118,15 @@ class Question(models.Model):
                 prompt = f"{rendered} (A) {pair['A']} (B) {pair['B']}"
 
                 body = {
-                    "model": "gpt-3.5-turbo",
+                    "model": "gpt-4o-mini",
                     "messages": [{"role": "user", "content": prompt}],
                     "response_format": {
-                        "type": "json_object",
-                        "schema": AB_RESPONSE_SCHEMA,
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "ab_response_schema",
+                            "strict": True,
+                            "schema": AB_RESPONSE_SCHEMA,
+                        }
                     },
                 }
 
@@ -195,6 +199,7 @@ class OpenAIBatch(models.Model):
     batch_id = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=20, db_index=True)
     errors = models.TextField(blank=True, null=True)
+    error_file_id = models.CharField(max_length=100, blank=True, null=True)
     output_file_id = models.CharField(max_length=100, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -210,6 +215,7 @@ class OpenAIBatch(models.Model):
 
         self.status = batch.status
         self.errors = batch.errors
+        self.error_file_id = batch.error_file_id
         self.output_file_id = batch.output_file_id
         self.save()
 
@@ -233,5 +239,7 @@ class OpenAIBatch(models.Model):
             line = line.strip()
             if line:
                 results.append(json.loads(line))
+
+        print(results)
 
         return results
