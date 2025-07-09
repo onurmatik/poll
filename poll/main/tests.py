@@ -45,9 +45,7 @@ class OpenAIBatchModelTests(TestCase):
         q = Question.objects.create(template="dummy", choices=["A", "B"])
         batch = OpenAIBatch.objects.create(
             question=q,
-            batch_id="batch_1",
-            status="completed",
-            output_file_id="file_123",
+            data={"id": "batch_1", "status": "completed", "output_file_id": "file_123"},
         )
 
         fake_content = (

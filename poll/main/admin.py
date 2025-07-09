@@ -26,7 +26,6 @@ class AnswerAdmin(admin.ModelAdmin):
 @admin.register(OpenAIBatch)
 class OpenAIBatchAdmin(admin.ModelAdmin):
     list_display = ["batch_id", "status", "created_at", "updated_at"]
-    list_filter = ["status"]
     actions = [
         'update_status',
         'retrieve_results'

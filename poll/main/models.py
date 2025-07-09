@@ -185,11 +185,10 @@ class Question(models.Model):
                 input_file_id=file_obj.id,
             )
 
-            # bookkeeping
+            # bookkeeping - store the full response object as JSON
             OpenAIBatch.objects.create(
                 question=self,
-                batch_id=batch.id,
-                status=batch.status,
+                data=batch.model_dump(),
             )
 
 
@@ -205,28 +204,38 @@ class Answer(models.Model):
 
 
 class OpenAIBatch(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="openai_batches")
-    batch_id = models.CharField(max_length=100, unique=True)
-    status = models.CharField(max_length=20, db_index=True)
-    errors = models.TextField(blank=True, null=True)
-    error_file_id = models.CharField(max_length=100, blank=True, null=True)
-    output_file_id = models.CharField(max_length=100, blank=True, null=True)
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="openai_batches"
+    )
+    data = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
+    @property
+    def batch_id(self) -> str | None:
+        return self.data.get("id")
+
+    @property
+    def status(self) -> str | None:
+        return self.data.get("status")
+
+    @property
+    def output_file_id(self) -> str | None:
+        return self.data.get("output_file_id")
+
+    @property
+    def error_file_id(self) -> str | None:
+        return self.data.get("error_file_id")
+
     def __str__(self) -> str:
-        return self.batch_id
+        return self.batch_id or "unknown"
 
     def update_status(self):
         client = openai.OpenAI()
 
         batch = client.batches.retrieve(self.batch_id)
-
-        self.status = batch.status
-        self.errors = batch.errors
-        self.error_file_id = batch.error_file_id
-        self.output_file_id = batch.output_file_id
+        self.data = batch.model_dump()
         self.save()
 
     def retrieve_results(self) -> List[dict]:
