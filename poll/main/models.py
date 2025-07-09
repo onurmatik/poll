@@ -1,7 +1,16 @@
 import json
 from io import BytesIO
 from itertools import product, combinations
-from typing import List, Dict
+from typing import List, Dict, Literal
+
+from pydantic import BaseModel
+
+
+class ABResponse(BaseModel):
+    answer: Literal["A", "B"]
+
+
+AB_RESPONSE_SCHEMA = ABResponse.model_json_schema()
 
 import openai
 from django.db import models
@@ -105,14 +114,15 @@ class Question(models.Model):
 
         for rendered, _ctx in rendered_questions:
             for pair in pairs:
-                prompt = (
-                    f"{rendered} (A) {pair['A']} (B) {pair['B']}\n"
-                    "Please answer with 'A' or 'B'."
-                )
+                prompt = f"{rendered} (A) {pair['A']} (B) {pair['B']}"
 
                 body = {
                     "model": "gpt-3.5-turbo",
                     "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {
+                        "type": "json_object",
+                        "schema": AB_RESPONSE_SCHEMA,
+                    },
                 }
 
                 ctx_key_order = sorted(_ctx)
