@@ -48,29 +48,61 @@
 </p>
 
 <h2 class="mt-5">Big-picture preference counts</h2>
+<div class="row mb-3">
+  {% for key, values in question.context.items %}
+  <div class="col-auto">
+    <label for="filter_{{ key }}" class="form-label">{{ key|title }}</label>
+    <select id="filter_{{ key }}" data-key="{{ key }}" class="form-select context-filter">
+      <option value="">All</option>
+      {% for val in values %}
+      <option value="{{ val }}">{{ val }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endfor %}
+</div>
 <canvas id="preferenceChart" height="120"></canvas>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
-  const prefData = {{ preference_counts_json|safe }};
+  const questionUuid = "{{ question.uuid }}";
   const ctx = document.getElementById('preferenceChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(prefData),
-      datasets: [{
-        label: 'Preference count',
-        data: Object.values(prefData),
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true, ticks: { precision: 0 } }
-      }
+  const filters = document.querySelectorAll('.context-filter');
+  let chart;
+
+  async function loadChart() {
+    const params = new URLSearchParams();
+    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
+    const resp = await fetch(`/api/charts/questions/${questionUuid}/preference-counts?` + params.toString());
+    const data = await resp.json();
+    const counts = data.counts || {};
+    const labels = Object.keys(counts);
+    const dataset = Object.values(counts);
+    if (chart) {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = dataset;
+      chart.update();
+    } else {
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Preference count',
+            data: dataset,
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
     }
-  });
+  }
+
+  filters.forEach(sel => sel.addEventListener('change', loadChart));
+  loadChart();
 </script>
 {% else %}
 <p>No answers.</p>
