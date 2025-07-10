@@ -177,6 +177,13 @@ class Question(models.Model):
                 data=batch.model_dump(),
             )
 
+    def latest_answers(self):
+        """Return answers from the most recently created batch."""
+        last_batch = self.openai_batches.order_by("-created_at").first()
+        if not last_batch:
+            return Answer.objects.none()
+        return Answer.objects.filter(question=self, run_id=last_batch.run_id)
+
 
 class OpenAIBatch(models.Model):
     question = models.ForeignKey(

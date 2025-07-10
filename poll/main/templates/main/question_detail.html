@@ -42,28 +42,11 @@
 </table>
 
 <h2 class="mt-5">Answers</h2>
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Context</th>
-      <th>Choices</th>
-      <th>Choice</th>
-      <th>Confidence</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for answer in answers %}
-    <tr>
-      <td><code>{{ answer.context }}</code></td>
-      <td>A: {{ answer.choices.A }}<br>B: {{ answer.choices.B }}</td>
-      <td>{{ answer.choice }}</td>
-      <td>{{ answer.confidence }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="4" class="text-center">No answers.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% if has_answers %}
+<p>
+  <a class="btn btn-primary" href="{% url 'polls:question_answers_csv' question.uuid %}">Download CSV</a>
+</p>
+{% else %}
+<p>No answers.</p>
+{% endif %}
 {% endblock %}
