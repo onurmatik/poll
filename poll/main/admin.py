@@ -6,7 +6,7 @@ from .models import Question, Answer, OpenAIBatch
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ["uuid", "template", "created_at"]
+    list_display = ["uuid", "text", "created_at"]
     actions = [
         'submit_openai_batch',
     ]
@@ -20,7 +20,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
-    list_display = ["rendered_question", "choice_a", "choice_b", "choice", "run_id"]
+    list_display = ["rendered_question", "choice_a", "choice_b", "choice", "confidence", "run_id"]
 
 
 @admin.register(OpenAIBatch)

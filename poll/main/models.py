@@ -28,7 +28,7 @@ AB_RESPONSE_SCHEMA = to_strict_json_schema(ABResponse)
 
 class Question(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    template = models.CharField(max_length=500)  # Where would a {{ gender }} from {{ country }} prefer to move?
+    text = models.CharField(max_length=500)  # Where would you like to move for living?
     context = models.JSONField(default=dict)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
     choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Brasil", "Japan", ...]
 
@@ -37,7 +37,7 @@ class Question(models.Model):
     archived = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return self.template
+        return self.text
 
     def render_all_questions(self):
         """
@@ -61,7 +61,7 @@ class Question(models.Model):
           continue to work.
         """
         if not self.context:  # No dynamic parts; return as‑is
-            return [(self.template, {})]
+            return [(self.text, {})]
 
         # Normalise: every key maps to an iterable
         keys = list(self.context.keys())
