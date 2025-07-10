@@ -146,8 +146,6 @@ class Question(models.Model):
         ]
 
     def submit_batches(self):
-        print (self.get_openai_batches())
-        return
         client = openai.OpenAI()
 
         run_id = uuid.uuid4()

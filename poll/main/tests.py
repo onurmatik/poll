@@ -4,8 +4,12 @@ import json
 from unittest.mock import Mock, patch
 
 from django.urls import reverse
+from django.contrib.admin.sites import AdminSite
+from django.test import RequestFactory
+import csv
 
 from .models import Question, OpenAIBatch, Answer
+from .admin import AnswerAdmin
 
 
 class QuestionModelTests(TestCase):
@@ -117,3 +121,39 @@ class QuestionDetailViewTests(TestCase):
         self.assertEqual(response.context["question"], q)
         self.assertEqual(response.context["num_variations"], 1)
         self.assertEqual(response.context["total_queries"], 1)
+
+
+class AnswerAdminTests(TestCase):
+    def setUp(self):
+        self.admin_site = AdminSite()
+        self.factory = RequestFactory()
+
+    def test_download_csv_action(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        a = Answer.objects.create(
+            question=q,
+            context={},
+            choices={"A": "A", "B": "B"},
+            choice="A",
+            confidence=0.8,
+        )
+
+        ma = AnswerAdmin(Answer, self.admin_site)
+        response = ma.download_csv(None, Answer.objects.filter(pk=a.pk))
+        content = response.content.decode()
+        rows = list(csv.reader(content.splitlines()))
+        self.assertEqual(rows[0], ["question", "context", "choices", "choice", "confidence", "run_id"])
+        self.assertEqual(rows[1][0], q.text)
+        self.assertEqual(float(rows[1][4]), 0.8)
+
+    def test_confidence_filter_queryset(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        high = Answer.objects.create(question=q, context={}, choices={"A": "A", "B": "B"}, choice="A", confidence=0.8)
+        low = Answer.objects.create(question=q, context={}, choices={"A": "A", "B": "B"}, choice="A", confidence=0.5)
+
+        ma = AnswerAdmin(Answer, self.admin_site)
+        request = self.factory.get("/", {"min_confidence": "0.75"})
+        filt = ma.ConfidenceFilter(request, request.GET.copy(), Answer, ma)
+        qs = filt.queryset(request, Answer.objects.all())
+        self.assertIn(high, list(qs))
+        self.assertNotIn(low, list(qs))
