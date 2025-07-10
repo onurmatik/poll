@@ -229,3 +229,20 @@ class ChartAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["counts"], {"X": 1})
+
+    def test_preference_heatmap_endpoint(self):
+        url = f"/api/charts/questions/{self.question.uuid}/preference-heatmap"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["choices"], ["X", "Y"])
+        self.assertEqual(data["matrix"][0][1], 1)
+        self.assertEqual(data["matrix"][1][0], 1)
+
+    def test_preference_heatmap_endpoint_filter(self):
+        url = f"/api/charts/questions/{self.question.uuid}/preference-heatmap?gender=man"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["matrix"][0][1], 1)
+        self.assertEqual(data["matrix"][1][0], 0)
