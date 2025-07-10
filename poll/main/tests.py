@@ -136,8 +136,6 @@ class QuestionDetailViewTests(TestCase):
         self.assertEqual(response.context["total_queries"], 1)
         self.assertTrue(response.context["has_answers"])
         self.assertContains(response, "Download CSV")
-        self.assertIn("preference_counts", response.context)
-        self.assertEqual(response.context["preference_counts"], {"A": 1})
         self.assertContains(response, "preferenceChart")
 
     def test_question_answers_csv_view(self):
@@ -196,3 +194,38 @@ class AnswerAdminTests(TestCase):
         qs = filt.queryset(request, Answer.objects.all())
         self.assertIn(high, list(qs))
         self.assertNotIn(low, list(qs))
+
+class ChartAPITests(TestCase):
+    def setUp(self):
+        self.question = Question.objects.create(
+            text="q", choices=["X", "Y"], context={"gender": ["man", "woman"]}
+        )
+        self.batch = OpenAIBatch.objects.create(question=self.question, data={"id": "b1"})
+        Answer.objects.create(
+            question=self.question,
+            run_id=self.batch.run_id,
+            context={"gender": "man"},
+            choices={"A": "X", "B": "Y"},
+            choice="A",
+        )
+        Answer.objects.create(
+            question=self.question,
+            run_id=self.batch.run_id,
+            context={"gender": "woman"},
+            choices={"A": "X", "B": "Y"},
+            choice="B",
+        )
+
+    def test_preference_counts_endpoint(self):
+        url = f"/api/charts/questions/{self.question.uuid}/preference-counts"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["counts"], {"X": 1, "Y": 1})
+
+    def test_preference_counts_endpoint_filter(self):
+        url = f"/api/charts/questions/{self.question.uuid}/preference-counts?gender=man"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["counts"], {"X": 1})

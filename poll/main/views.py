@@ -17,20 +17,12 @@ def question_detail(request, uuid):
     answers = question.latest_answers()
     has_answers = answers.exists()
 
-    preference_counts: dict[str, int] = {}
-    for ans in answers:
-        chosen = ans.choices.get(ans.choice)
-        if chosen:
-            preference_counts[chosen] = preference_counts.get(chosen, 0) + 1
-
     context = {
         "question": question,
         "num_variations": num_variations,
         "total_queries": total_queries,
         "batches": batches,
         "has_answers": has_answers,
-        "preference_counts": preference_counts,
-        "preference_counts_json": json.dumps(preference_counts),
     }
     return render(request, "main/question_detail.html", context)
 
