@@ -10,7 +10,6 @@ from openai.lib._pydantic import to_strict_json_schema
 from django.db import models
 
 
-
 class ABResponse(BaseModel):
     """Response model indicating a binary choice with confidence level.
 
@@ -29,8 +28,8 @@ AB_RESPONSE_SCHEMA = to_strict_json_schema(ABResponse)
 class Question(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     text = models.CharField(max_length=500)  # Where would you like to move for living?
-    context = models.JSONField(default=dict)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
-    choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Brasil", "Japan", ...]
+    context = models.JSONField(default=dict, blank=True)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
+    choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Japan", ...]
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -55,11 +54,6 @@ class Question(models.Model):
     def render_all_questions(self) -> List[tuple[str, dict]]:
         """Return question text with every context combination."""
         return [(self.text, ctx) for ctx in self.context_combinations()]
-
-    def render_question(self, context: dict) -> str:
-        """Return the question text (context is ignored)."""
-        return self.text
-
 
     def choice_pairs(self) -> List[Dict[str, str]]:
         """
@@ -152,6 +146,8 @@ class Question(models.Model):
         ]
 
     def submit_batches(self):
+        print (self.get_openai_batches())
+        return
         client = openai.OpenAI()
 
         run_id = uuid.uuid4()
@@ -313,15 +309,3 @@ class Answer(models.Model):
         choices=[(c, c) for c in ["A", "B"]],
     )
     confidence = models.FloatField(null=True, blank=True)
-
-    @property
-    def rendered_question(self) -> str:
-        return self.question.render_question(self.context)
-
-    @property
-    def choice_a(self) -> str:
-        return self.choices.get("A", "")
-
-    @property
-    def choice_b(self) -> str:
-        return self.choices.get("B", "")
