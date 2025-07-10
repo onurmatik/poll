@@ -11,24 +11,24 @@ from .models import Question, OpenAIBatch, Answer
 class QuestionModelTests(TestCase):
     def test_render_all_questions(self):
         q = Question.objects.create(
-            template="Where would a {{ gender }} move?",
+            text="Where would a person move?",
             context={"gender": ["man", "woman"]},
         )
         expected = [
-            ("Where would a man move?", {"gender": "man"}),
-            ("Where would a woman move?", {"gender": "woman"}),
+            ("Where would a person move?", {"gender": "man"}),
+            ("Where would a person move?", {"gender": "woman"}),
         ]
         self.assertEqual(q.render_all_questions(), expected)
 
     def test_choice_pairs_deduplicated(self):
         q = Question.objects.create(
-            template="dummy",
+            text="dummy",
             choices=["A", "A", "B"],
         )
         self.assertEqual(q.choice_pairs(), [{"A": "A", "B": "B"}])
 
     def test_get_openai_batches_contains_response_format(self):
-        q = Question.objects.create(template="q", choices=["A", "B"])
+        q = Question.objects.create(text="q", choices=["A", "B"])
         batches = q.get_openai_batches()
         self.assertEqual(len(batches), 1)
         line = batches[0].splitlines()[0]
@@ -40,7 +40,7 @@ class QuestionModelTests(TestCase):
         self.assertEqual(schema_props["confidence"]["type"], "number")
 
     def test_submit_batches_assigns_single_run_id(self):
-        q = Question.objects.create(template="q", choices=["A", "B"])
+        q = Question.objects.create(text="q", choices=["A", "B"])
         mock_client = Mock()
         mock_client.files.create.return_value = Mock(id="file_1")
         mock_client.batches.create.return_value = Mock(model_dump=Mock(return_value={"id": "batch_1"}))
@@ -59,7 +59,7 @@ class QuestionModelTests(TestCase):
 class OpenAIBatchModelTests(TestCase):
     def test_retrieve_results_creates_answers(self):
         q = Question.objects.create(
-            template="Where would a {{ gender }} from {{ country }} prefer to move?",
+            text="Where would a person prefer to move?",
             context={"country": ["Turkey"], "gender": ["man"]},
             choices=["Turkey", "Mexico"],
         )
@@ -101,7 +101,7 @@ class OpenAIBatchModelTests(TestCase):
 
 class QuestionDetailViewTests(TestCase):
     def test_question_detail_view(self):
-        q = Question.objects.create(template="example", choices=["A", "B"])
+        q = Question.objects.create(text="example", choices=["A", "B"])
         a = Answer.objects.create(
             question=q,
             context={},

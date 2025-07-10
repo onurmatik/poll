@@ -8,7 +8,7 @@ import openai
 from pydantic import BaseModel, confloat
 from openai.lib._pydantic import to_strict_json_schema
 from django.db import models
-from django.template import Template, Context
+
 
 
 class ABResponse(BaseModel):
@@ -39,51 +39,27 @@ class Question(models.Model):
     def __str__(self) -> str:
         return self.text
 
-    def render_all_questions(self):
-        """
-        Materialise every concrete question implied by this instance.
+    def context_combinations(self) -> List[dict]:
+        """Return all possible context dictionaries for this question."""
+        if not self.context:
+            return [{}]
 
-        Returns
-        -------
-        list[tuple[str, dict]]
-            [
-                ("Where would a man from Turkey prefer to move?", {"gender": "man", "country": "Turkey"}),
-                ("Where would a man from Mexico prefer to move?", {"gender": "man", "country": "Mexico"}),
-                ...
-            ]
-
-        Notes
-        -----
-        * Keys in ``self.context`` that map to scalars are treated as single‑element
-          lists so you can mix list and scalar values.
-        * If ``self.context`` is empty the method simply returns the raw template.
-        * Uses Django’s own template engine, so filters/tags in the template
-          continue to work.
-        """
-        if not self.context:  # No dynamic parts; return as‑is
-            return [(self.text, {})]
-
-        # Normalise: every key maps to an iterable
         keys = list(self.context.keys())
         value_sequences = [
             v if isinstance(v, (list, tuple)) else [v]
             for v in (self.context[k] for k in keys)
         ]
 
-        compiled_tmpl = Template(self.template)
-        results = []
+        return [dict(zip(keys, combo)) for combo in product(*value_sequences)]
 
-        for combination in product(*value_sequences):
-            bound_ctx = dict(zip(keys, combination))
-            rendered = compiled_tmpl.render(Context(bound_ctx))
-            results.append((rendered, bound_ctx))
-
-        return results
+    def render_all_questions(self) -> List[tuple[str, dict]]:
+        """Return question text with every context combination."""
+        return [(self.text, ctx) for ctx in self.context_combinations()]
 
     def render_question(self, context: dict) -> str:
-        """Render the template using the provided context."""
-        compiled_tmpl = Template(self.template)
-        return compiled_tmpl.render(Context(context))
+        """Return the question text (context is ignored)."""
+        return self.text
+
 
     def choice_pairs(self) -> List[Dict[str, str]]:
         """
@@ -124,18 +100,25 @@ class Question(models.Model):
         List[str]
             Each item is the raw text of a .jsonl batch containing ≤ ``max_lines`` lines.
         """
-        rendered_questions = self.render_all_questions()
+        contexts = self.context_combinations()
         pairs = self.choice_pairs()
 
         json_lines: List[str] = []
 
-        for rendered, _ctx in rendered_questions:
+        for _ctx in contexts:
+            ctx_lines = "\n".join(f"{k}: {v}" for k, v in _ctx.items())
+            dev_msg = "You are the average person defined by these demographics:"
+            if ctx_lines:
+                dev_msg += "\n" + ctx_lines
             for pair in pairs:
-                prompt = f"{rendered} (A) {pair['A']} (B) {pair['B']}"
+                user_msg = f"{self.text}\nA: {pair['A']}\nB: {pair['B']}"
 
                 body = {
                     "model": "gpt-4o-mini",
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": [
+                        {"role": "developer", "content": dev_msg},
+                        {"role": "user", "content": user_msg},
+                    ],
                     "response_format": {
                         "type": "json_schema",
                         "json_schema": {
