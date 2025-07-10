@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory
 import csv
+import uuid
 
 from .models import Question, OpenAIBatch, Answer
 from .admin import AnswerAdmin
@@ -58,6 +59,17 @@ class QuestionModelTests(TestCase):
         run_ids = {b.run_id for b in batches}
         self.assertEqual(len(run_ids), 1)
 
+    def test_latest_answers_returns_most_recent_batch(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        older = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
+        Answer.objects.create(question=q, run_id=older.run_id, context={}, choices={"A": "A", "B": "B"}, choice="A")
+
+        newer = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b2"})
+        latest_answer = Answer.objects.create(question=q, run_id=newer.run_id, context={}, choices={"A": "A", "B": "B"}, choice="B")
+
+        answers = list(q.latest_answers())
+        self.assertEqual(answers, [latest_answer])
+
 
 
 class OpenAIBatchModelTests(TestCase):
@@ -106,13 +118,14 @@ class OpenAIBatchModelTests(TestCase):
 class QuestionDetailViewTests(TestCase):
     def test_question_detail_view(self):
         q = Question.objects.create(text="example", choices=["A", "B"])
+        batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
             question=q,
+            run_id=batch.run_id,
             context={},
             choices={"A": "A", "B": "B"},
             choice="A",
         )
-        self.assertIsNotNone(a.run_id)
 
         url = reverse("polls:question_detail", args=[q.uuid])
         response = self.client.get(url)
@@ -121,6 +134,29 @@ class QuestionDetailViewTests(TestCase):
         self.assertEqual(response.context["question"], q)
         self.assertEqual(response.context["num_variations"], 1)
         self.assertEqual(response.context["total_queries"], 1)
+        self.assertTrue(response.context["has_answers"])
+        self.assertContains(response, "Download CSV")
+
+    def test_question_answers_csv_view(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
+        a = Answer.objects.create(
+            question=q,
+            run_id=batch.run_id,
+            context={},
+            choices={"A": "A", "B": "B"},
+            choice="A",
+            confidence=0.9,
+        )
+
+        url = reverse("polls:question_answers_csv", args=[q.uuid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        rows = list(csv.reader(content.splitlines()))
+        self.assertEqual(rows[0], ["question", "context", "choices", "choice", "confidence", "run_id"])
+        self.assertEqual(rows[1][0], q.text)
 
 
 class AnswerAdminTests(TestCase):
