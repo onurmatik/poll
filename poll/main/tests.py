@@ -136,6 +136,9 @@ class QuestionDetailViewTests(TestCase):
         self.assertEqual(response.context["total_queries"], 1)
         self.assertTrue(response.context["has_answers"])
         self.assertContains(response, "Download CSV")
+        self.assertIn("preference_counts", response.context)
+        self.assertEqual(response.context["preference_counts"], {"A": 1})
+        self.assertContains(response, "preferenceChart")
 
     def test_question_answers_csv_view(self):
         q = Question.objects.create(text="q", choices=["A", "B"])

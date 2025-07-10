@@ -46,6 +46,32 @@
 <p>
   <a class="btn btn-primary" href="{% url 'polls:question_answers_csv' question.uuid %}">Download CSV</a>
 </p>
+
+<h2 class="mt-5">Big-picture preference counts</h2>
+<canvas id="preferenceChart" height="120"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+  const prefData = {{ preference_counts_json|safe }};
+  const ctx = document.getElementById('preferenceChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(prefData),
+      datasets: [{
+        label: 'Preference count',
+        data: Object.values(prefData),
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+</script>
 {% else %}
 <p>No answers.</p>
 {% endif %}
