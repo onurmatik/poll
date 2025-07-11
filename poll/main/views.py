@@ -6,6 +6,11 @@ import json
 from .models import Question
 
 
+def question_list(request):
+    questions = Question.objects.filter(archived=False).order_by("-created_at")
+    return render(request, "main/question_list.html", {"questions": questions})
+
+
 def question_detail(request, uuid):
     question = get_object_or_404(Question, uuid=uuid)
     rendered_questions = question.render_all_questions()

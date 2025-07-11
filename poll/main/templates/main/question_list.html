@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Questions{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Questions</h1>
+<div class="list-group">
+  {% for q in questions %}
+  <a href="{% url 'polls:question_detail' q.uuid %}" class="list-group-item list-group-item-action">
+    {{ q.text|truncatechars:80 }}
+  </a>
+  {% empty %}
+  <div class="alert alert-info">No questions.</div>
+  {% endfor %}
+</div>
+{% endblock %}
