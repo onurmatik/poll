@@ -259,8 +259,14 @@
                 const v = ctx.dataset.data[ctx.dataIndex].v;
                 return color(v);
               },
-              width: ctx => (ctx.chart.chartArea.width / labels.length) - 1,
-              height: ctx => (ctx.chart.chartArea.height / labels.length) - 1,
+              width: (ctx) => {
+                const area = ctx.chart.chartArea;
+                return area ? (area.width / labels.length) - 1 : 0;
+              },
+              height: (ctx) => {
+                const area = ctx.chart.chartArea;
+                return area ? (area.height / labels.length) - 1 : 0;
+              },
             }]
           },
           options: {
