@@ -1,9 +1,10 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponse
 import csv
 import json
 
 from .models import Question
+from .forms import QuestionForm
 
 
 def question_list(request):
@@ -61,3 +62,15 @@ def question_answers_csv(request, uuid):
         ])
 
     return response
+
+
+def question_create(request):
+    if request.method == "POST":
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            question = form.save()
+            return redirect("polls:question_detail", uuid=question.uuid)
+    else:
+        form = QuestionForm()
+
+    return render(request, "main/question_form.html", {"form": form})

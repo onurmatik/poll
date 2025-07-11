@@ -3,7 +3,10 @@
 {% block title %}Questions{% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-4">Questions</h1>
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3 mb-0">Questions</h1>
+  <a class="btn btn-primary" href="{% url 'polls:question_create' %}">New Question</a>
+</div>
 <div class="list-group">
   {% for q in questions %}
   <a href="{% url 'polls:question_detail' q.uuid %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
