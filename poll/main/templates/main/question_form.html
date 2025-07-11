@@ -54,6 +54,19 @@
       const demographicsContainer = document.getElementById("demographics-container");
       const hiddenField = document.getElementById("{{ form.context.id_for_label }}");
 
+      // Build JSON from current inputs and sync to hidden field
+      function updateDemographicsJSON() {
+        const result = {};
+        demographicsContainer.querySelectorAll(".category-input").forEach((catInput) => {
+          const key = catInput.value.trim();
+          if (!key) return;
+          const tagify = catInput.parentElement.querySelector(".tags-input").tagify;
+          const values = tagify.value.map((t) => t.value.trim()).filter(Boolean);
+          if (values.length) result[key] = values;
+        });
+        hiddenField.value = JSON.stringify(result);
+      }
+
       // Helper to create a new category row
       function createCategoryRow(key = "", values = []) {
         const row = document.createElement("div");
@@ -71,10 +84,15 @@
           originalInputValueFormat: (valuesArray) => valuesArray.map((item) => item.value),
         });
         tagInput.tagify = tagify; // store instance for reliable access
+        tagify.on("add remove", updateDemographicsJSON);
         tagify.addTags(values);
 
         // Remove row handler
-        row.querySelector(".remove-category").addEventListener("click", () => row.remove());
+        row.querySelector(".remove-category").addEventListener("click", () => {
+          row.remove();
+          updateDemographicsJSON();
+        });
+        row.querySelector(".category-input").addEventListener("input", updateDemographicsJSON);
       }
 
       // Load existing JSON (if editing)
@@ -87,20 +105,13 @@
       }
 
       // Add new category row
-      document.getElementById("add-category").addEventListener("click", () => createCategoryRow());
-
-      // Before form submit, build JSON and push into hidden field
-      demographicsContainer.closest("form").addEventListener("submit", function () {
-        const result = {};
-        demographicsContainer.querySelectorAll(".category-input").forEach((catInput) => {
-          const key = catInput.value.trim();
-          if (!key) return;
-          const tagify = catInput.parentElement.querySelector(".tags-input").tagify;
-          const values = tagify.value.map((t) => t.value.trim()).filter(Boolean);
-          if (values.length) result[key] = values;
-        });
-        hiddenField.value = JSON.stringify(result);
+      document.getElementById("add-category").addEventListener("click", () => {
+        createCategoryRow();
+        updateDemographicsJSON();
       });
+
+      // Before form submit, build JSON and push into hidden field one last time
+      demographicsContainer.closest("form").addEventListener("submit", updateDemographicsJSON);
     });
   </script>
 {% endblock %}
