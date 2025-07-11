@@ -120,4 +120,38 @@ def confidence_distribution(request, uuid: str):
     labels = [f"{i/10:.1f}-{(i+1)/10:.1f}" for i in range(10)]
     return {"labels": labels, "counts": bins}
 
+
+@chart_router.get("questions/{uuid}/preference-flows")
+def preference_flows(request, uuid: str):
+    """Return directed win counts for Sankey diagrams."""
+    question = get_object_or_404(Question, uuid=uuid)
+    answers = question.latest_answers()
+
+    for key in question.context.keys():
+        value = request.GET.get(key)
+        if value:
+            answers = answers.filter(**{f"context__{key}": value})
+
+    flows: dict[tuple[str, str], int] = {}
+    order: list[str] = []
+    for ans in answers:
+        a = ans.choices.get("A")
+        b = ans.choices.get("B")
+        if not a or not b:
+            continue
+        if ans.choice == "A":
+            pair = (a, b)
+        elif ans.choice == "B":
+            pair = (b, a)
+        else:
+            continue
+        flows[pair] = flows.get(pair, 0) + 1
+        order.extend([a, b])
+
+    labels = list(dict.fromkeys(order))
+    links = [
+        {"from": src, "to": dst, "flow": cnt} for (src, dst), cnt in flows.items()
+    ]
+    return {"labels": labels, "links": links}
+
 api.add_router("/charts/", chart_router)
