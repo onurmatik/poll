@@ -163,6 +163,20 @@ class QuestionDetailViewTests(TestCase):
         self.assertEqual(rows[1][0], q.text)
 
 
+class QuestionListViewTests(TestCase):
+    def test_question_list_view(self):
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"])
+        q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True)
+
+        url = reverse("polls:question_list")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, q1.text)
+        self.assertNotContains(response, q2.text)
+        self.assertContains(response, reverse("polls:question_detail", args=[q1.uuid]))
+
+
 class AnswerAdminTests(TestCase):
     def setUp(self):
         self.admin_site = AdminSite()
