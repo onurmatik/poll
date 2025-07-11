@@ -64,21 +64,26 @@
 <canvas id="preferenceChart" height="120"></canvas>
 <h3 class="mt-4">Head-to-head heatmap</h3>
 <canvas id="heatmapChart" height="300"></canvas>
+<h3 class="mt-4">Preference flows</h3>
+<canvas id="sankeyChart" height="250"></canvas>
 <h3 class="mt-4">Ranked league table</h3>
 <canvas id="eloChart" height="150"></canvas>
 <h3 class="mt-4">Answer confidence distribution</h3>
 <canvas id="confidenceChart" height="120"></canvas>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.9.0/dist/chartjs-chart-sankey.min.js" crossorigin="anonymous"></script>
 <script>
   const questionUuid = "{{ question.uuid }}";
   const ctx = document.getElementById('preferenceChart').getContext('2d');
   const heatCtx = document.getElementById('heatmapChart').getContext('2d');
+  const sankeyCtx = document.getElementById('sankeyChart').getContext('2d');
   const eloCtx = document.getElementById('eloChart').getContext('2d');
   const confCtx = document.getElementById('confidenceChart').getContext('2d');
   const filters = document.querySelectorAll('.context-filter');
   let chart;
   let heatmap;
+  let sankey;
   let eloChart;
   let confChart;
 
@@ -170,6 +175,32 @@
     }
   }
 
+  async function loadSankey() {
+    const params = new URLSearchParams();
+    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
+    const resp = await fetch(`/api/charts/questions/${questionUuid}/preference-flows?` + params.toString());
+    const data = await resp.json();
+    const labels = data.labels || [];
+    const links = data.links || [];
+    if (sankey) {
+      sankey.data.labels = labels;
+      sankey.data.datasets[0].data = links;
+      sankey.update();
+    } else {
+      sankey = new Chart(sankeyCtx, {
+        type: 'sankey',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Preference flows',
+            data: links
+          }]
+        },
+        options: {responsive: true}
+      });
+    }
+  }
+
   async function loadElo() {
     const params = new URLSearchParams();
     filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
@@ -231,7 +262,7 @@
     }
   }
 
-  function reloadAll() { loadChart(); loadHeatmap(); loadElo(); loadConfidence(); }
+  function reloadAll() { loadChart(); loadHeatmap(); loadSankey(); loadElo(); loadConfidence(); }
   filters.forEach(sel => sel.addEventListener('change', reloadAll));
   reloadAll();
 </script>

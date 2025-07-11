@@ -139,6 +139,7 @@ class QuestionDetailViewTests(TestCase):
         self.assertContains(response, "preferenceChart")
         self.assertContains(response, "eloChart")
         self.assertContains(response, "confidenceChart")
+        self.assertContains(response, "sankeyChart")
 
     def test_question_answers_csv_view(self):
         q = Question.objects.create(text="q", choices=["A", "B"])
@@ -268,3 +269,14 @@ class ChartAPITests(TestCase):
         data = response.json()
         self.assertEqual(data["counts"][8], 1)
         self.assertEqual(data["counts"][6], 1)
+
+    def test_preference_flows_endpoint(self):
+        url = f"/api/charts/questions/{self.question.uuid}/preference-flows"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        labels = data["labels"]
+        links = data["links"]
+        self.assertIn("X", labels)
+        self.assertIn("Y", labels)
+        self.assertEqual(len(links), 2)
