@@ -1,282 +1,344 @@
 {% extends "base.html" %}
 
-{% block title %}Question Detail{% endblock %}
+{% block title %}{{ question.text|truncatechars:60 }} – Details{% endblock %}
+
+{% block extra_css %}
+  <style>
+    pre.question-text {
+      white-space: pre-wrap;       /* keep formatting but wrap */
+      word-break: break-word;
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Question Detail</h1>
-<div class="mb-3">
-  <strong>Question text:</strong>
-  <pre>{{ question.text }}</pre>
-</div>
-<div class="mb-3">
-  <strong>Number of question variations:</strong> {{ num_variations }}
-</div>
-<div class="mb-3">
-  <strong>Total LLM queries:</strong> {{ total_queries }}
-</div>
-{% if batch_total_queries %}
-<div class="mb-3">
-  <strong>Batch queries processed:</strong> {{ batch_total_queries }}
-</div>
-{% endif %}
-{% if batch_duration %}
-<div class="mb-3">
-  <strong>Batch duration (s):</strong> {{ batch_duration }}
-</div>
-{% endif %}
-
-<h2 class="mt-5">Batches</h2>
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Batch ID</th>
-      <th>Status</th>
-      <th>Created</th>
-      <th>Updated</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for batch in batches %}
-    <tr>
-      <td>{{ batch.batch_id }}</td>
-      <td>{{ batch.status }}</td>
-      <td>{{ batch.created_at }}</td>
-      <td>{{ batch.updated_at }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="4" class="text-center">No batches.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<h2 class="mt-5">Answers</h2>
-{% if has_answers %}
-<p>
-  <a class="btn btn-primary" href="{% url 'polls:question_answers_csv' question.uuid %}">Download CSV</a>
-</p>
-
-<h2 class="mt-5">Big-picture preference counts</h2>
-<div class="row mb-3">
-  {% for key, values in question.context.items %}
-  <div class="col-auto">
-    <label for="filter_{{ key }}" class="form-label">{{ key|title }}</label>
-    <select id="filter_{{ key }}" data-key="{{ key }}" class="form-select context-filter">
-      <option value="">All</option>
-      {% for val in values %}
-      <option value="{{ val }}">{{ val }}</option>
-      {% endfor %}
-    </select>
+<div class="container-xxl">
+  <div class="d-flex align-items-start justify-content-between mb-4">
+    <h1 class="h3 mb-0">{{ question.text|truncatechars:80 }}</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'polls:question_list' %}">
+      ← Back to list
+    </a>
   </div>
-  {% endfor %}
+
+  <!-- Question -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h5">Question</h2>
+      <pre class="question-text mb-0">{{ question.text }}</pre>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="row g-3 mb-5">
+    <div class="col-6 col-lg-3">
+      <div class="card text-center shadow-sm h-100">
+        <div class="card-body py-3">
+          <div class="fs-4 fw-semibold">{{ num_variations }}</div>
+          <div class="text-muted small">Variations</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card text-center shadow-sm h-100">
+        <div class="card-body py-3">
+          <div class="fs-4 fw-semibold">{{ total_queries }}</div>
+          <div class="text-muted small">Total queries</div>
+        </div>
+      </div>
+    </div>
+    {% if batch_total_queries %}
+    <div class="col-6 col-lg-3">
+      <div class="card text-center shadow-sm h-100">
+        <div class="card-body py-3">
+          <div class="fs-4 fw-semibold">{{ batch_total_queries }}</div>
+          <div class="text-muted small">Batch queries</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if batch_duration %}
+    <div class="col-6 col-lg-3">
+      <div class="card text-center shadow-sm h-100">
+        <div class="card-body py-3">
+          <div class="fs-4 fw-semibold">{{ batch_duration }}</div>
+          <div class="text-muted small">Batch duration (s)</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Batches -->
+  <h2 class="h5 mb-3">Batches</h2>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Batch ID</th>
+          <th scope="col">Status</th>
+          <th scope="col">Created</th>
+          <th scope="col">Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr>
+          <td class="font-monospace">{{ batch.batch_id }}</td>
+          <td>
+            <span class="badge {% if batch.status == 'completed' %}bg-success{% elif batch.status == 'running' %}bg-info{% elif batch.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+              {{ batch.status|title }}
+            </span>
+          </td>
+          <td>{{ batch.created_at|date:"Y‑m‑d H:i" }}</td>
+          <td>{{ batch.updated_at|date:"Y‑m‑d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">No batches.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Answers -->
+  <div class="d-flex align-items-center justify-content-between mt-5 mb-3">
+    <h2 class="h5 mb-0">Answers</h2>
+    {% if has_answers %}
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'polls:question_answers_csv' question.uuid %}">
+      Download CSV
+    </a>
+    {% endif %}
+  </div>
+
+  {% if has_answers %}
+  <!-- Context filters -->
+  {% if question.context %}
+  <div class="alert alert-light border mb-4">
+    <div class="row gy-2">
+      {% for key, values in question.context.items %}
+      <div class="col-6 col-md-auto">
+        <label for="filter_{{ key }}" class="form-label mb-1 small text-uppercase fw-semibold">{{ key|title }}</label>
+        <select id="filter_{{ key }}" data-key="{{ key }}" class="form-select form-select-sm context-filter">
+          <option value="">All</option>
+          {% for val in values %}
+          <option value="{{ val }}">{{ val }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+<div class="row gy-5">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Preference Count</div>
+      <div class="card-body"><canvas id="preferenceChart" height="140"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Head‑to‑head Heatmap</div>
+      <div class="card-body"><canvas id="heatmapChart" height="260"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Preference Flows (Sankey)</div>
+      <div class="card-body"><canvas id="sankeyChart" height="220"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Ranked League Table (Elo)</div>
+      <div class="card-body"><canvas id="eloChart" height="140"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Answer Confidence Distribution</div>
+      <div class="card-body"><canvas id="confidenceChart" height="140"></canvas></div>
+    </div>
+  </div>
 </div>
-<canvas id="preferenceChart" height="120"></canvas>
-<h3 class="mt-4">Head-to-head heatmap</h3>
-<canvas id="heatmapChart" height="300"></canvas>
-<h3 class="mt-4">Preference flows</h3>
-<canvas id="sankeyChart" height="250"></canvas>
-<h3 class="mt-4">Ranked league table</h3>
-<canvas id="eloChart" height="150"></canvas>
-<h3 class="mt-4">Answer confidence distribution</h3>
-<canvas id="confidenceChart" height="120"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.14.0/dist/chartjs-chart-sankey.min.js" crossorigin="anonymous"></script>
-<script>
-  const questionUuid = "{{ question.uuid }}";
-  const ctx = document.getElementById('preferenceChart').getContext('2d');
-  const heatCtx = document.getElementById('heatmapChart').getContext('2d');
-  const sankeyCtx = document.getElementById('sankeyChart').getContext('2d');
-  const eloCtx = document.getElementById('eloChart').getContext('2d');
-  const confCtx = document.getElementById('confidenceChart').getContext('2d');
-  const filters = document.querySelectorAll('.context-filter');
-  let chart;
-  let heatmap;
-  let sankey;
-  let eloChart;
-  let confChart;
 
-  async function loadChart() {
-    const params = new URLSearchParams();
-    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
-    const resp = await fetch(`/api/charts/questions/${questionUuid}/preference-counts?` + params.toString());
-    const data = await resp.json();
-    const counts = data.counts || {};
-    const labels = Object.keys(counts);
-    const dataset = Object.values(counts);
-    if (chart) {
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = dataset;
-      chart.update();
-    } else {
-      chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Preference count',
-            data: dataset,
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-      });
-    }
-  }
+  {% else %}
+  <div class="alert alert-info">No answers yet.</div>
+  {% endif %}
+</div>
 
-  async function loadHeatmap() {
-    const params = new URLSearchParams();
-    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
-    const resp = await fetch(`/api/charts/questions/${questionUuid}/preference-heatmap?` + params.toString());
-    const data = await resp.json();
-    const labels = data.choices || [];
-    const matrix = data.matrix || [];
-    const dataset = [];
-    let max = 0;
-    for (let y = 0; y < matrix.length; y++) {
-      for (let x = 0; x < matrix.length; x++) {
-        const v = matrix[y][x];
-        if (v === null) continue;
-        dataset.push({x, y, v});
-        if (v > max) max = v;
-      }
-    }
-
-    const color = v => `rgba(75, 192, 192, ${max ? v / max : 0})`;
-
-    if (heatmap) {
-      heatmap.data.datasets[0].data = dataset;
-      heatmap.options.scales.x.labels = labels;
-      heatmap.options.scales.y.labels = labels;
-      heatmap.update();
-    } else {
-      heatmap = new Chart(heatCtx, {
-        type: 'matrix',
-        data: {
-          datasets: [{
-            label: 'Win count',
-            data: dataset,
-            backgroundColor(ctx) {
-              const v = ctx.dataset.data[ctx.dataIndex].v;
-              return color(v);
-            },
-            width: (ctx) => {
-              const area = ctx.chart.chartArea;
-              return area ? (area.width / labels.length) - 1 : 0;
-            },
-            height: (ctx) => {
-              const area = ctx.chart.chartArea;
-              return area ? (area.height / labels.length) - 1 : 0;
-            },
-          }]
-        },
-        options: {
-          scales: {
-            x: {type: 'category', labels: labels, position: 'top'},
-            y: {type: 'category', labels: labels, reverse: true}
-          },
-        }
-      });
-    }
-  }
-
-  async function loadSankey() {
-    const params = new URLSearchParams();
-    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
-    const resp = await fetch(`/api/charts/questions/${questionUuid}/preference-flows?` + params.toString());
-    const data = await resp.json();
-    const labels = data.labels || [];
-    const links = data.links || [];
-    if (sankey) {
-      sankey.data.labels = labels;
-      sankey.data.datasets[0].data = links;
-      sankey.update();
-    } else {
-      sankey = new Chart(sankeyCtx, {
-        type: 'sankey',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Preference flows',
-            data: links
-          }]
-        },
-        options: {responsive: true}
-      });
-    }
-  }
-
-  async function loadElo() {
-    const params = new URLSearchParams();
-    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
-    const resp = await fetch(`/api/charts/questions/${questionUuid}/elo-ratings?` + params.toString());
-    const data = await resp.json();
-    const rows = data.rankings || [];
-    const labels = rows.map(r => r.choice);
-    const ratings = rows.map(r => r.rating);
-    if (eloChart) {
-      eloChart.data.labels = labels;
-      eloChart.data.datasets[0].data = ratings;
-      eloChart.update();
-    } else {
-      eloChart = new Chart(eloCtx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Elo rating',
-            data: ratings,
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
-  }
-
-  async function loadConfidence() {
-    const params = new URLSearchParams();
-    filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
-    const resp = await fetch(`/api/charts/questions/${questionUuid}/confidence-distribution?` + params.toString());
-    const data = await resp.json();
-    const labels = data.labels || [];
-    const counts = data.counts || [];
-    if (confChart) {
-      confChart.data.labels = labels;
-      confChart.data.datasets[0].data = counts;
-      confChart.update();
-    } else {
-      confChart = new Chart(confCtx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Answer count',
-            data: counts,
-            backgroundColor: 'rgba(153, 102, 255, 0.5)',
-            borderColor: 'rgba(153, 102, 255, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-      });
-    }
-  }
-
-  function reloadAll() { loadChart(); loadHeatmap(); loadSankey(); loadElo(); loadConfidence(); }
-  filters.forEach(sel => sel.addEventListener('change', reloadAll));
-  reloadAll();
-</script>
-{% else %}
-<p>No answers.</p>
-{% endif %}
 {% endblock %}
+
+{% if has_answers %}
+{% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.14.0/dist/chartjs-chart-sankey.min.js" crossorigin="anonymous" defer></script>
+  <script defer>
+    document.addEventListener('DOMContentLoaded', () => {
+      const questionUuid = "{{ question.uuid }}";
+      const ctx = document.getElementById('preferenceChart').getContext('2d');
+      const heatCtx = document.getElementById('heatmapChart').getContext('2d');
+      const sankeyCtx = document.getElementById('sankeyChart').getContext('2d');
+      const eloCtx = document.getElementById('eloChart').getContext('2d');
+      const confCtx = document.getElementById('confidenceChart').getContext('2d');
+      const filters = document.querySelectorAll('.context-filter');
+
+      let charts = {};
+
+      function getParams() {
+        const params = new URLSearchParams();
+        filters.forEach(sel => { if (sel.value) params.append(sel.dataset.key, sel.value); });
+        return params;
+      }
+
+      async function fetchJSON(url) {
+        const resp = await fetch(url);
+        return resp.json();
+      }
+
+      async function loadPreference() {
+        const data = await fetchJSON(`/api/charts/questions/${questionUuid}/preference-counts?${getParams()}`);
+        const counts = data.counts || {};
+        const labels = Object.keys(counts);
+        const dataset = Object.values(counts);
+
+        if (charts.pref) {
+          charts.pref.data.labels = labels;
+          charts.pref.data.datasets[0].data = dataset;
+          charts.pref.update();
+          return;
+        }
+        charts.pref = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Preference count',
+              data: dataset,
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+      }
+
+      async function loadHeatmap() {
+        const data = await fetchJSON(`/api/charts/questions/${questionUuid}/preference-heatmap?${getParams()}`);
+        const labels = data.choices || [];
+        const matrix = data.matrix || [];
+        const dataset = [];
+        let max = 0;
+        for (let y = 0; y < matrix.length; y++) {
+          for (let x = 0; x < matrix.length; x++) {
+            const v = matrix[y][x];
+            if (v === null) continue;
+            dataset.push({x, y, v});
+            if (v > max) max = v;
+          }
+        }
+        const color = v => `rgba(75, 192, 192, ${max ? v / max : 0})`;
+        if (charts.heat) {
+          charts.heat.data.datasets[0].data = dataset;
+          charts.heat.options.scales.x.labels = labels;
+          charts.heat.options.scales.y.labels = labels;
+          charts.heat.update();
+          return;
+        }
+        charts.heat = new Chart(heatCtx, {
+          type: 'matrix',
+          data: {
+            datasets: [{
+              label: 'Win count',
+              data: dataset,
+              backgroundColor(ctx) {
+                const v = ctx.dataset.data[ctx.dataIndex].v;
+                return color(v);
+              },
+              width: ctx => (ctx.chart.chartArea.width / labels.length) - 1,
+              height: ctx => (ctx.chart.chartArea.height / labels.length) - 1,
+            }]
+          },
+          options: {
+            scales: {
+              x: {type: 'category', labels, position: 'top'},
+              y: {type: 'category', labels, reverse: true}
+            }
+          }
+        });
+      }
+
+      async function loadSankey() {
+        const data = await fetchJSON(`/api/charts/questions/${questionUuid}/preference-flows?${getParams()}`);
+        const labels = data.labels || [];
+        const links = data.links || [];
+        if (charts.sankey) {
+          charts.sankey.data.labels = labels;
+          charts.sankey.data.datasets[0].data = links;
+          charts.sankey.update();
+          return;
+        }
+        charts.sankey = new Chart(sankeyCtx, {
+          type: 'sankey',
+          data: { labels, datasets: [{ label: 'Preference flows', data: links }] },
+          options: { responsive: true }
+        });
+      }
+
+      async function loadElo() {
+        const data = await fetchJSON(`/api/charts/questions/${questionUuid}/elo-ratings?${getParams()}`);
+        const rows = data.rankings || [];
+        const labels = rows.map(r => r.choice);
+        const ratings = rows.map(r => r.rating);
+        if (charts.elo) {
+          charts.elo.data.labels = labels;
+          charts.elo.data.datasets[0].data = ratings;
+          charts.elo.update();
+          return;
+        }
+        charts.elo = new Chart(eloCtx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Elo rating',
+              data: ratings,
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: { scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      async function loadConfidence() {
+        const data = await fetchJSON(`/api/charts/questions/${questionUuid}/confidence-distribution?${getParams()}`);
+        const labels = data.labels || [];
+        const counts = data.counts || [];
+        if (charts.conf) {
+          charts.conf.data.labels = labels;
+          charts.conf.data.datasets[0].data = counts;
+          charts.conf.update();
+          return;
+        }
+        charts.conf = new Chart(confCtx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Answer count', data: counts, backgroundColor: 'rgba(153, 102, 255, 0.5)', borderColor: 'rgba(153, 102, 255, 1)', borderWidth: 1 }] },
+          options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+      }
+
+      async function reloadAll() { await Promise.all([loadPreference(), loadHeatmap(), loadSankey(), loadElo(), loadConfidence()]); }
+
+      filters.forEach(sel => sel.addEventListener('change', reloadAll));
+      reloadAll();
+    });
+  </script>
+{% endblock %}
+{% endif %}
+
