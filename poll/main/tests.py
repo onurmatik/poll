@@ -138,6 +138,7 @@ class QuestionDetailViewTests(TestCase):
         self.assertContains(response, "Download CSV")
         self.assertContains(response, "preferenceChart")
         self.assertContains(response, "eloChart")
+        self.assertContains(response, "confidenceChart")
 
     def test_question_answers_csv_view(self):
         q = Question.objects.create(text="q", choices=["A", "B"])
@@ -208,6 +209,7 @@ class ChartAPITests(TestCase):
             context={"gender": "man"},
             choices={"A": "X", "B": "Y"},
             choice="A",
+            confidence=0.8,
         )
         Answer.objects.create(
             question=self.question,
@@ -215,6 +217,7 @@ class ChartAPITests(TestCase):
             context={"gender": "woman"},
             choices={"A": "X", "B": "Y"},
             choice="B",
+            confidence=0.6,
         )
 
     def test_preference_counts_endpoint(self):
@@ -257,3 +260,11 @@ class ChartAPITests(TestCase):
         self.assertEqual(len(rankings), 2)
         # Winner order may depend on algorithm; just check keys
         self.assertEqual({r["choice"] for r in rankings}, {"X", "Y"})
+
+    def test_confidence_distribution_endpoint(self):
+        url = f"/api/charts/questions/{self.question.uuid}/confidence-distribution"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["counts"][8], 1)
+        self.assertEqual(data["counts"][6], 1)
