@@ -70,6 +70,7 @@
         const tagify = new Tagify(tagInput, {
           originalInputValueFormat: (valuesArray) => valuesArray.map((item) => item.value),
         });
+        tagInput.tagify = tagify; // store instance for reliable access
         tagify.addTags(values);
 
         // Remove row handler
@@ -94,7 +95,7 @@
         demographicsContainer.querySelectorAll(".category-input").forEach((catInput) => {
           const key = catInput.value.trim();
           if (!key) return;
-          const tagify = catInput.parentElement.querySelector(".tags-input")._tagify;
+          const tagify = catInput.parentElement.querySelector(".tags-input").tagify;
           const values = tagify.value.map((t) => t.value.trim()).filter(Boolean);
           if (values.length) result[key] = values;
         });
