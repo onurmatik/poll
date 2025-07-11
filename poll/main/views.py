@@ -7,7 +7,11 @@ from .models import Question
 
 
 def question_list(request):
-    questions = Question.objects.filter(archived=False).order_by("-created_at")
+    questions = (
+        Question.objects.filter(archived=False)
+        .order_by("-created_at")
+        .prefetch_related("openai_batches")
+    )
     return render(request, "main/question_list.html", {"questions": questions})
 
 

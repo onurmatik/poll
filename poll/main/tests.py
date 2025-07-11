@@ -176,6 +176,18 @@ class QuestionListViewTests(TestCase):
         self.assertNotContains(response, q2.text)
         self.assertContains(response, reverse("polls:question_detail", args=[q1.uuid]))
 
+    def test_question_list_view_shows_status(self):
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"])
+        OpenAIBatch.objects.create(question=q1, data={"id": "b1", "status": "running"})
+        q2 = Question.objects.create(text="Another?", choices=["A", "B"])
+
+        url = reverse("polls:question_list")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Running")
+        self.assertContains(response, "Queued")
+
 
 class AnswerAdminTests(TestCase):
     def setUp(self):
