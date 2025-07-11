@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Create Question{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="d-flex align-items-start justify-content-between mb-4">
+    <h1 class="h3 mb-0">New Question</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'polls:question_list' %}">← Back to list</a>
+  </div>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Question Text</label>
+      {{ form.text }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Demographic Options (JSON)</label>
+      {{ form.context }}
+      <div class="form-text">e.g. {"gender": ["man", "woman"]}</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Choices (one per line)</label>
+      {{ form.choices }}
+    </div>
+    <button type="submit" class="btn btn-primary">Create</button>
+  </form>
+</div>
+{% endblock %}

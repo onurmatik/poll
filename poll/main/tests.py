@@ -189,6 +189,26 @@ class QuestionListViewTests(TestCase):
         self.assertContains(response, "Queued")
 
 
+class QuestionCreateViewTests(TestCase):
+    def test_get_create_view(self):
+        url = reverse("polls:question_create")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_post_create_view(self):
+        url = reverse("polls:question_create")
+        data = {
+            "text": "Where to go?",
+            "context": json.dumps({"gender": ["man", "woman"]}),
+            "choices": "Turkey\nMexico",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        q = Question.objects.first()
+        self.assertIsNotNone(q)
+        self.assertEqual(q.text, "Where to go?")
+
+
 class AnswerAdminTests(TestCase):
     def setUp(self):
         self.admin_site = AdminSite()
