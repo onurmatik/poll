@@ -6,8 +6,11 @@
 <h1 class="h3 mb-4">Questions</h1>
 <div class="list-group">
   {% for q in questions %}
-  <a href="{% url 'polls:question_detail' q.uuid %}" class="list-group-item list-group-item-action">
-    {{ q.text|truncatechars:80 }}
+  <a href="{% url 'polls:question_detail' q.uuid %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+    <span>{{ q.text|truncatechars:80 }}</span>
+    <span class="badge {% if q.latest_batch_status == 'completed' %}bg-success{% elif q.latest_batch_status == 'running' %}bg-info{% elif q.latest_batch_status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+      {{ q.latest_batch_status|title }}
+    </span>
   </a>
   {% empty %}
   <div class="alert alert-info">No questions.</div>

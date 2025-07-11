@@ -184,6 +184,14 @@ class Question(models.Model):
             return Answer.objects.none()
         return Answer.objects.filter(question=self, run_id=last_batch.run_id)
 
+    @property
+    def latest_batch_status(self) -> str:
+        """Return the status of the most recently created batch."""
+        last_batch = self.openai_batches.order_by("-created_at").first()
+        if last_batch and last_batch.status:
+            return str(last_batch.status)
+        return "queued"
+
 
 class OpenAIBatch(models.Model):
     question = models.ForeignKey(
