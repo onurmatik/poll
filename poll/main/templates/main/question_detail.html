@@ -14,6 +14,16 @@
 <div class="mb-3">
   <strong>Total LLM queries:</strong> {{ total_queries }}
 </div>
+{% if batch_total_queries %}
+<div class="mb-3">
+  <strong>Batch queries processed:</strong> {{ batch_total_queries }}
+</div>
+{% endif %}
+{% if batch_duration %}
+<div class="mb-3">
+  <strong>Batch duration (s):</strong> {{ batch_duration }}
+</div>
+{% endif %}
 
 <h2 class="mt-5">Batches</h2>
 <table class="table table-bordered">

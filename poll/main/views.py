@@ -13,6 +13,9 @@ def question_detail(request, uuid):
     choice_pairs = question.choice_pairs()
     total_queries = len(rendered_questions) * len(choice_pairs)
     batches = question.openai_batches.all().order_by("-created_at")
+    latest_batch = batches.first()
+    batch_total_queries = latest_batch.request_count_total if latest_batch else None
+    batch_duration = latest_batch.duration_seconds if latest_batch else None
 
     answers = question.latest_answers()
     has_answers = answers.exists()
@@ -22,6 +25,8 @@ def question_detail(request, uuid):
         "num_variations": num_variations,
         "total_queries": total_queries,
         "batches": batches,
+        "batch_total_queries": batch_total_queries,
+        "batch_duration": batch_duration,
         "has_answers": has_answers,
     }
     return render(request, "main/question_detail.html", context)
