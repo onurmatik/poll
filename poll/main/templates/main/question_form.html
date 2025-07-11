@@ -3,7 +3,7 @@
 {% block title %}Create Question{% endblock %}
 
 {# -- Extra CSS for Tagify (tag input) -- #}
-{% block extrahead %}
+{% block extra_css %}
   {{ block.super }}
   <link rel="stylesheet" href="https://unpkg.com/@yaireo/tagify/dist/tagify.css">
 {% endblock %}
@@ -46,7 +46,7 @@
 {% endblock %}
 
 {# -- JS for dynamic demographics builder -- #}
-{% block extrascripts %}
+{% block extra_js %}
   {{ block.super }}
   <script src="https://unpkg.com/@yaireo/tagify"></script>
   <script>
