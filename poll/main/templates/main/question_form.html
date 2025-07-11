@@ -2,28 +2,104 @@
 
 {% block title %}Create Question{% endblock %}
 
+{# -- Extra CSS for Tagify (tag input) -- #}
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="stylesheet" href="https://unpkg.com/@yaireo/tagify/dist/tagify.css">
+{% endblock %}
+
 {% block content %}
 <div class="container-xxl">
   <div class="d-flex align-items-start justify-content-between mb-4">
     <h1 class="h3 mb-0">New Question</h1>
     <a class="btn btn-outline-secondary" href="{% url 'polls:question_list' %}">← Back to list</a>
   </div>
+
   <form method="post" novalidate>
     {% csrf_token %}
+
     <div class="mb-3">
       <label class="form-label">Question Text</label>
       {{ form.text }}
     </div>
+
+    {# --- Demographics (user‑friendly) --- #}
     <div class="mb-3">
-      <label class="form-label">Demographic Options (JSON)</label>
-      {{ form.context }}
-      <div class="form-text">e.g. {"gender": ["man", "woman"]}</div>
+      <label class="form-label mb-1">Demographic Options</label>
+      <div id="demographics-container"></div>
+      <button type="button" id="add-category" class="btn btn-sm btn-outline-primary mt-2">Add category</button>
+      {# Keep the original Django field but hide it; it will be populated right before submit #}
+      <div class="d-none">
+        {{ form.context }}
+      </div>
+      <div class="form-text">Define categories (e.g. gender, age, location) and their options.</div>
     </div>
+
     <div class="mb-3">
       <label class="form-label">Choices (one per line)</label>
       {{ form.choices }}
     </div>
+
     <button type="submit" class="btn btn-primary">Create</button>
   </form>
 </div>
+{% endblock %}
+
+{# -- JS for dynamic demographics builder -- #}
+{% block extrascripts %}
+  {{ block.super }}
+  <script src="https://unpkg.com/@yaireo/tagify"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const demographicsContainer = document.getElementById("demographics-container");
+      const hiddenField = document.getElementById("{{ form.context.id_for_label }}");
+
+      // Helper to create a new category row
+      function createCategoryRow(key = "", values = []) {
+        const row = document.createElement("div");
+        row.className = "d-flex align-items-start gap-2 mb-2";
+        row.innerHTML = `
+          <input type="text" class="form-control w-25 category-input" placeholder="Category (e.g. gender)" value="${key}">
+          <input type="text" class="form-control flex-fill tags-input" placeholder="Options (press Enter after each)">
+          <button type="button" class="btn btn-outline-danger remove-category">✕</button>
+        `;
+        demographicsContainer.appendChild(row);
+
+        // Init Tagify on the tags-input
+        const tagInput = row.querySelector(".tags-input");
+        const tagify = new Tagify(tagInput, {
+          originalInputValueFormat: (valuesArray) => valuesArray.map((item) => item.value),
+        });
+        tagify.addTags(values);
+
+        // Remove row handler
+        row.querySelector(".remove-category").addEventListener("click", () => row.remove());
+      }
+
+      // Load existing JSON (if editing)
+      try {
+        const existing = hiddenField.value ? JSON.parse(hiddenField.value) : {};
+        Object.entries(existing).forEach(([k, v]) => createCategoryRow(k, v));
+        if (!Object.keys(existing).length) createCategoryRow();
+      } catch (e) {
+        createCategoryRow();
+      }
+
+      // Add new category row
+      document.getElementById("add-category").addEventListener("click", () => createCategoryRow());
+
+      // Before form submit, build JSON and push into hidden field
+      demographicsContainer.closest("form").addEventListener("submit", function () {
+        const result = {};
+        demographicsContainer.querySelectorAll(".category-input").forEach((catInput) => {
+          const key = catInput.value.trim();
+          if (!key) return;
+          const tagify = catInput.parentElement.querySelector(".tags-input")._tagify;
+          const values = tagify.value.map((t) => t.value.trim()).filter(Boolean);
+          if (values.length) result[key] = values;
+        });
+        hiddenField.value = JSON.stringify(result);
+      });
+    });
+  </script>
 {% endblock %}
