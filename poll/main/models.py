@@ -211,6 +211,27 @@ class OpenAIBatch(models.Model):
     def error_file_id(self) -> str | None:
         return self.data.get("error_file_id")
 
+    @property
+    def request_count_total(self) -> int | None:
+        """Return the total number of requests in this batch."""
+        rc = self.data.get("request_counts") or {}
+        try:
+            return int(rc.get("total"))
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def duration_seconds(self) -> int | None:
+        """Return how long the batch took to complete in seconds."""
+        created = self.data.get("created_at")
+        completed = self.data.get("completed_at")
+        try:
+            if created is not None and completed is not None:
+                return int(completed) - int(created)
+        except (TypeError, ValueError):
+            pass
+        return None
+
     class Meta:
         verbose_name_plural = "OpenAI Batches"
 
