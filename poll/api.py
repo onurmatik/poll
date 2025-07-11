@@ -98,4 +98,26 @@ def elo_ratings(request, uuid: str):
 
     return {"rankings": ranking}
 
+
+@chart_router.get("questions/{uuid}/confidence-distribution")
+def confidence_distribution(request, uuid: str):
+    """Return histogram counts for answer confidences (0-1)."""
+    question = get_object_or_404(Question, uuid=uuid)
+    answers = question.latest_answers()
+
+    for key in question.context.keys():
+        value = request.GET.get(key)
+        if value:
+            answers = answers.filter(**{f"context__{key}": value})
+
+    bins = [0] * 10
+    for ans in answers:
+        if ans.confidence is None:
+            continue
+        idx = int(min(max(ans.confidence, 0), 0.999) * 10)
+        bins[idx] += 1
+
+    labels = [f"{i/10:.1f}-{(i+1)/10:.1f}" for i in range(10)]
+    return {"labels": labels, "counts": bins}
+
 api.add_router("/charts/", chart_router)
