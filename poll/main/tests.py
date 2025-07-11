@@ -137,6 +137,7 @@ class QuestionDetailViewTests(TestCase):
         self.assertTrue(response.context["has_answers"])
         self.assertContains(response, "Download CSV")
         self.assertContains(response, "preferenceChart")
+        self.assertContains(response, "eloChart")
 
     def test_question_answers_csv_view(self):
         q = Question.objects.create(text="q", choices=["A", "B"])
@@ -246,3 +247,13 @@ class ChartAPITests(TestCase):
         data = response.json()
         self.assertEqual(data["matrix"][0][1], 1)
         self.assertEqual(data["matrix"][1][0], 0)
+
+    def test_elo_ratings_endpoint(self):
+        url = f"/api/charts/questions/{self.question.uuid}/elo-ratings"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        rankings = data["rankings"]
+        self.assertEqual(len(rankings), 2)
+        # Winner order may depend on algorithm; just check keys
+        self.assertEqual({r["choice"] for r in rankings}, {"X", "Y"})
