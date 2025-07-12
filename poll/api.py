@@ -1,4 +1,4 @@
-from ninja import NinjaAPI, Router
+from ninja import NinjaAPI, Router, Schema
 from django.shortcuts import get_object_or_404
 
 from .main.models import Question
@@ -6,6 +6,23 @@ from .main.models import Question
 api = NinjaAPI()
 
 chart_router = Router()
+question_router = Router()
+
+
+class QuestionCreateSchema(Schema):
+    text: str
+    context: dict | None = None
+    choices: list[str]
+
+
+@question_router.post("")
+def create_question(request, payload: QuestionCreateSchema):
+    question = Question.objects.create(
+        text=payload.text,
+        context=payload.context or {},
+        choices=payload.choices,
+    )
+    return api.create_response(request, {"uuid": str(question.uuid)}, status=201)
 
 @chart_router.get("questions/{uuid}/preference-counts")
 def preference_counts(request, uuid: str):
@@ -155,3 +172,4 @@ def preference_flows(request, uuid: str):
     return {"labels": labels, "links": links}
 
 api.add_router("/charts/", chart_router)
+api.add_router("/questions/", question_router)
