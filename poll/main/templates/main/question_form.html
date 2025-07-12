@@ -40,6 +40,12 @@
       {{ form.choices }}
     </div>
 
+    <div class="alert alert-info">
+      <span id="count-context">1</span> context combinations ×
+      <span id="count-pairs">0</span> choice pairs =
+      <strong><span id="count-total">0</span> total queries</strong>
+    </div>
+
     <button type="submit" class="btn btn-primary">Create</button>
   </form>
 </div>
@@ -53,12 +59,12 @@
     document.addEventListener("DOMContentLoaded", function () {
       const demographicsContainer = document.getElementById("demographics-container");
       const hiddenField = document.getElementById("{{ form.context.id_for_label }}");
+      const choicesField = document.getElementById("{{ form.choices.id_for_label }}");
 
       // Build JSON from current inputs and sync to hidden field
       const categoryRows = [];
 
       function updateDemographicsJSON() {
-        console.log("Updating demographics JSON");
         const result = {};
         categoryRows.forEach(({ input, tagify }) => {
           const key = input.value.trim();
@@ -66,16 +72,14 @@
           const values = tagify.value
             .map((t) => (typeof t === "string" ? t.trim() : String(t.value || "").trim()))
             .filter(Boolean);
-          console.log(" -", key, values);
           if (values.length) result[key] = values;
         });
         hiddenField.value = JSON.stringify(result);
-        console.log("Context field value:", hiddenField.value);
+        updateCounts();
       }
 
       // Helper to create a new category row
       function createCategoryRow(key = "", values = []) {
-        console.log("Creating category row", key, values);
         const row = document.createElement("div");
         row.className = "d-flex align-items-start gap-2 mb-2";
         row.innerHTML = `
@@ -100,7 +104,6 @@
 
         // Remove row handler
         row.querySelector(".remove-category").addEventListener("click", () => {
-          console.log("Removing category row", key);
           const idx = categoryRows.findIndex((r) => r.row === row);
           if (idx > -1) categoryRows.splice(idx, 1);
           row.remove();
@@ -126,6 +129,40 @@
 
       // Before form submit, build JSON and push into hidden field one last time
       demographicsContainer.closest("form").addEventListener("submit", updateDemographicsJSON);
+
+      choicesField.addEventListener("input", updateCounts);
+
+      function countContextCombinations() {
+        if (!hiddenField.value) return 1;
+        try {
+          const ctx = JSON.parse(hiddenField.value);
+          let count = 1;
+          Object.values(ctx).forEach(vals => {
+            const len = Array.isArray(vals) ? vals.length : 1;
+            count *= Math.max(len, 1);
+          });
+          return count;
+        } catch (e) { return 1; }
+      }
+
+      function countChoicePairs() {
+        const choices = choicesField.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+        const unique = Array.from(new Set(choices));
+        const n = unique.length;
+        return n < 2 ? 0 : n * (n - 1) / 2;
+      }
+
+      function updateCounts() {
+        const ctxCnt = countContextCombinations();
+        const pairCnt = countChoicePairs();
+        const total = ctxCnt * pairCnt;
+        document.getElementById("count-context").textContent = ctxCnt;
+        document.getElementById("count-pairs").textContent = pairCnt;
+        document.getElementById("count-total").textContent = total;
+      }
+
+      updateDemographicsJSON();
+      updateCounts();
     });
   </script>
 {% endblock %}
