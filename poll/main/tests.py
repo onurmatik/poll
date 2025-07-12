@@ -204,9 +204,24 @@ class QuestionCreateViewTests(TestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
+        self.assertIn("/review/", response["Location"])
         q = Question.objects.first()
         self.assertIsNotNone(q)
         self.assertEqual(q.text, "Where to go?")
+
+    def test_post_review_submits_batches(self):
+        q = Question.objects.create(text="T?", choices=["A", "B"])
+        url = reverse("polls:question_review", args=[q.uuid])
+        data = {
+            "text": "T?",
+            "context": json.dumps({}),
+            "choices": "A\nB",
+        }
+        with patch.object(Question, "submit_batches") as sb:
+            response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("polls:question_detail", args=[q.uuid]))
+        sb.assert_called_once()
 
 
 class AnswerAdminTests(TestCase):
