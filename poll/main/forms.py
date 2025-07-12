@@ -19,6 +19,15 @@ class QuestionForm(forms.ModelForm):
             'text': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # When editing (not bound), convert JSON fields to user-friendly strings
+        if not self.is_bound:
+            if isinstance(self.initial.get('context'), dict):
+                self.initial['context'] = json.dumps(self.initial['context'])
+            if isinstance(self.initial.get('choices'), (list, tuple)):
+                self.initial['choices'] = "\n".join(self.initial['choices'])
+
     def clean_context(self):
         data = self.cleaned_data.get('context')
         if not data:
