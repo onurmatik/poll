@@ -326,3 +326,26 @@ class ChartAPITests(TestCase):
         self.assertIn("X", labels)
         self.assertIn("Y", labels)
         self.assertEqual(len(links), 2)
+
+
+class QuestionAPITests(TestCase):
+    def test_create_question(self):
+        payload = {
+            "text": "Where to travel?",
+            "context": {"gender": ["man", "woman"]},
+            "choices": ["Turkey", "Mexico"],
+        }
+
+        response = self.client.post(
+            "/api/questions/",
+            json.dumps(payload),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertIn("uuid", data)
+        q = Question.objects.get(uuid=data["uuid"])
+        self.assertEqual(q.text, payload["text"])
+        self.assertEqual(q.context, payload["context"])
+        self.assertEqual(q.choices, payload["choices"])
