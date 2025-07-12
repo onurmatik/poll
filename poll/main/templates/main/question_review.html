@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Review Question{% endblock %}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="https://unpkg.com/@yaireo/tagify/dist/tagify.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="d-flex align-items-start justify-content-between mb-4">
+    <h1 class="h3 mb-0">Review Question</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'polls:question_list' %}">← Back to list</a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label">Question Text</label>
+      {{ form.text }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label mb-1">Demographic Options</label>
+      <div id="demographics-container"></div>
+      <button type="button" id="add-category" class="btn btn-sm btn-outline-primary mt-2">Add category</button>
+      <div class="d-none">
+        {{ form.context }}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Choices (one per line)</label>
+      {{ form.choices }}
+    </div>
+
+    <div class="alert alert-info">
+      <div><strong>Context combinations:</strong> <span id="count-context">0</span></div>
+      <div><strong>Choice pairs:</strong> <span id="count-pairs">0</span></div>
+      <div><strong>Total queries:</strong> <span id="count-total">0</span></div>
+    </div>
+
+    <button type="submit" name="submit" class="btn btn-primary">Approve &amp; Submit</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="https://unpkg.com/@yaireo/tagify"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const demographicsContainer = document.getElementById("demographics-container");
+      const hiddenField = document.getElementById("{{ form.context.id_for_label }}");
+      const choicesField = document.getElementById("{{ form.choices.id_for_label }}");
+
+      const categoryRows = [];
+
+      function updateDemographicsJSON() {
+        const result = {};
+        categoryRows.forEach(({ input, tagify }) => {
+          const key = input.value.trim();
+          if (!key || !tagify) return;
+          const values = tagify.value
+            .map((t) => (typeof t === "string" ? t.trim() : String(t.value || "").trim()))
+            .filter(Boolean);
+          if (values.length) result[key] = values;
+        });
+        hiddenField.value = JSON.stringify(result);
+        updateCounts();
+      }
+
+      function createCategoryRow(key = "", values = []) {
+        const row = document.createElement("div");
+        row.className = "d-flex align-items-start gap-2 mb-2";
+        row.innerHTML = `
+          <input type="text" class="form-control w-25 category-input" placeholder="Category (e.g. gender)" value="${key}">
+          <input type="text" class="form-control flex-fill tags-input" placeholder="Options (press Enter after each)">
+          <button type="button" class="btn btn-outline-danger remove-category">✕</button>
+        `;
+        demographicsContainer.appendChild(row);
+
+        const tagInput = row.querySelector(".tags-input");
+        const tagify = new Tagify(tagInput, {
+          originalInputValueFormat: (valuesArray) => valuesArray.map((item) => item.value),
+        });
+        tagify.on("add remove", updateDemographicsJSON);
+        tagInput.addEventListener("change", updateDemographicsJSON);
+        tagify.addTags(values);
+
+        const categoryInput = row.querySelector(".category-input");
+        categoryRows.push({ row, input: categoryInput, tagify });
+
+        row.querySelector(".remove-category").addEventListener("click", () => {
+          const idx = categoryRows.findIndex((r) => r.row === row);
+          if (idx > -1) categoryRows.splice(idx, 1);
+          row.remove();
+          updateDemographicsJSON();
+        });
+        categoryInput.addEventListener("input", updateDemographicsJSON);
+      }
+
+      try {
+        const existing = hiddenField.value ? JSON.parse(hiddenField.value) : {};
+        Object.entries(existing).forEach(([k, v]) => createCategoryRow(k, v));
+        if (!Object.keys(existing).length) createCategoryRow();
+      } catch (e) {
+        createCategoryRow();
+      }
+
+      document.getElementById("add-category").addEventListener("click", () => {
+        createCategoryRow();
+        updateDemographicsJSON();
+      });
+
+      demographicsContainer.closest("form").addEventListener("submit", updateDemographicsJSON);
+
+      choicesField.addEventListener("input", updateCounts);
+
+      function countContextCombinations() {
+        if (!hiddenField.value) return 1;
+        try {
+          const ctx = JSON.parse(hiddenField.value);
+          let count = 1;
+          Object.values(ctx).forEach(vals => {
+            const len = Array.isArray(vals) ? vals.length : 1;
+            count *= Math.max(len, 1);
+          });
+          return count;
+        } catch (e) { return 1; }
+      }
+
+      function countChoicePairs() {
+        const choices = choicesField.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+        const unique = Array.from(new Set(choices));
+        const n = unique.length;
+        return n < 2 ? 0 : n * (n - 1) / 2;
+      }
+
+      function updateCounts() {
+        const ctxCnt = countContextCombinations();
+        const pairCnt = countChoicePairs();
+        const total = ctxCnt * pairCnt;
+        document.getElementById("count-context").textContent = ctxCnt;
+        document.getElementById("count-pairs").textContent = pairCnt;
+        document.getElementById("count-total").textContent = total;
+      }
+
+      updateDemographicsJSON();
+      updateCounts();
+    });
+  </script>
+{% endblock %}

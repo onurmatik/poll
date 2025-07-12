@@ -69,8 +69,31 @@ def question_create(request):
         form = QuestionForm(request.POST)
         if form.is_valid():
             question = form.save()
-            return redirect("polls:question_detail", uuid=question.uuid)
+            return redirect("polls:question_review", uuid=question.uuid)
     else:
         form = QuestionForm()
 
     return render(request, "main/question_form.html", {"form": form})
+
+
+def question_review(request, uuid):
+    """Allow final review and submission of a question."""
+    question = get_object_or_404(Question, uuid=uuid)
+
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            question = form.save()
+            question.submit_batches()
+            return redirect("polls:question_detail", uuid=question.uuid)
+    else:
+        form = QuestionForm(instance=question)
+
+    return render(
+        request,
+        "main/question_review.html",
+        {
+            "form": form,
+            "question": question,
+        },
+    )
