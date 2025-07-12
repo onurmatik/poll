@@ -65,35 +65,43 @@ def question_answers_csv(request, uuid):
 
 
 def question_create(request):
+    """Create a new question or edit an existing one."""
+    uuid_param = request.GET.get("uuid")
+    instance = None
+    if uuid_param:
+        instance = get_object_or_404(Question, uuid=uuid_param)
+
     if request.method == "POST":
-        form = QuestionForm(request.POST)
+        form = QuestionForm(request.POST, instance=instance)
         if form.is_valid():
             question = form.save()
             return redirect("polls:question_review", uuid=question.uuid)
     else:
-        form = QuestionForm()
+        form = QuestionForm(instance=instance)
 
     return render(request, "main/question_form.html", {"form": form})
 
 
 def question_review(request, uuid):
-    """Allow final review and submission of a question."""
+    """Display a read-only summary of the question and submit batches."""
     question = get_object_or_404(Question, uuid=uuid)
 
+    rendered = question.render_all_questions()
+    num_variations = len(rendered)
+    choice_pairs = question.choice_pairs()
+    total_queries = num_variations * len(choice_pairs)
+
     if request.method == "POST":
-        form = QuestionForm(request.POST, instance=question)
-        if form.is_valid():
-            question = form.save()
-            question.submit_batches()
-            return redirect("polls:question_detail", uuid=question.uuid)
-    else:
-        form = QuestionForm(instance=question)
+        question.submit_batches()
+        return redirect("polls:question_detail", uuid=question.uuid)
 
     return render(
         request,
         "main/question_review.html",
         {
-            "form": form,
             "question": question,
+            "num_variations": num_variations,
+            "num_choice_pairs": len(choice_pairs),
+            "total_queries": total_queries,
         },
     )
