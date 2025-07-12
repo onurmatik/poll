@@ -54,8 +54,28 @@
       const demographicsContainer = document.getElementById("demographics-container");
       const hiddenField = document.getElementById("{{ form.context.id_for_label }}");
 
+      // Build JSON from current inputs and sync to hidden field
+      const categoryRows = [];
+
+      function updateDemographicsJSON() {
+        console.log("Updating demographics JSON");
+        const result = {};
+        categoryRows.forEach(({ input, tagify }) => {
+          const key = input.value.trim();
+          if (!key || !tagify) return;
+          const values = tagify.value
+            .map((t) => (typeof t === "string" ? t.trim() : String(t.value || "").trim()))
+            .filter(Boolean);
+          console.log(" -", key, values);
+          if (values.length) result[key] = values;
+        });
+        hiddenField.value = JSON.stringify(result);
+        console.log("Context field value:", hiddenField.value);
+      }
+
       // Helper to create a new category row
       function createCategoryRow(key = "", values = []) {
+        console.log("Creating category row", key, values);
         const row = document.createElement("div");
         row.className = "d-flex align-items-start gap-2 mb-2";
         row.innerHTML = `
@@ -70,10 +90,23 @@
         const tagify = new Tagify(tagInput, {
           originalInputValueFormat: (valuesArray) => valuesArray.map((item) => item.value),
         });
+        // Tagify stores its instance on the input element as "tagify"
+        tagify.on("add remove", updateDemographicsJSON);
+        tagInput.addEventListener("change", updateDemographicsJSON);
         tagify.addTags(values);
 
+        const categoryInput = row.querySelector(".category-input");
+        categoryRows.push({ row, input: categoryInput, tagify });
+
         // Remove row handler
-        row.querySelector(".remove-category").addEventListener("click", () => row.remove());
+        row.querySelector(".remove-category").addEventListener("click", () => {
+          console.log("Removing category row", key);
+          const idx = categoryRows.findIndex((r) => r.row === row);
+          if (idx > -1) categoryRows.splice(idx, 1);
+          row.remove();
+          updateDemographicsJSON();
+        });
+        categoryInput.addEventListener("input", updateDemographicsJSON);
       }
 
       // Load existing JSON (if editing)
@@ -86,20 +119,13 @@
       }
 
       // Add new category row
-      document.getElementById("add-category").addEventListener("click", () => createCategoryRow());
-
-      // Before form submit, build JSON and push into hidden field
-      demographicsContainer.closest("form").addEventListener("submit", function () {
-        const result = {};
-        demographicsContainer.querySelectorAll(".category-input").forEach((catInput) => {
-          const key = catInput.value.trim();
-          if (!key) return;
-          const tagify = catInput.parentElement.querySelector(".tags-input")._tagify;
-          const values = tagify.value.map((t) => t.value.trim()).filter(Boolean);
-          if (values.length) result[key] = values;
-        });
-        hiddenField.value = JSON.stringify(result);
+      document.getElementById("add-category").addEventListener("click", () => {
+        createCategoryRow();
+        updateDemographicsJSON();
       });
+
+      // Before form submit, build JSON and push into hidden field one last time
+      demographicsContainer.closest("form").addEventListener("submit", updateDemographicsJSON);
     });
   </script>
 {% endblock %}
