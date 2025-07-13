@@ -10,12 +10,27 @@ from .forms import QuestionForm
 
 @login_required
 def question_list(request):
-    questions = (
-        Question.objects.filter(archived=False)
+    """List questions grouped by status."""
+    active = (
+        Question.objects.filter(
+            archived=False,
+            status__in=["queued", "running", "completed", "importing"],
+        )
         .order_by("-created_at")
         .prefetch_related("openai_batches")
     )
-    return render(request, "main/question_list.html", {"questions": questions})
+    failed = (
+        Question.objects.filter(archived=False, status="failed")
+        .order_by("-created_at")
+        .prefetch_related("openai_batches")
+    )
+    archived = (
+        Question.objects.filter(archived=True)
+        .order_by("-created_at")
+        .prefetch_related("openai_batches")
+    )
+    context = {"active": active, "failed": failed, "archived": archived}
+    return render(request, "main/question_list.html", context)
 
 
 @login_required
@@ -114,3 +129,13 @@ def question_review(request, uuid):
             "total_queries": total_queries,
         },
     )
+
+
+@login_required
+def question_toggle_archive(request, uuid):
+    """Toggle the archived state of a question."""
+    question = get_object_or_404(Question, uuid=uuid)
+    if request.method == "POST":
+        question.archived = not question.archived
+        question.save(update_fields=["archived"])
+    return redirect("polls:question_list")
