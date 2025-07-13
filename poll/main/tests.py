@@ -185,7 +185,7 @@ class QuestionListViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, q1.text)
-        self.assertNotContains(response, q2.text)
+        self.assertContains(response, q2.text)
 
     def test_question_list_view_shows_status(self):
         q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)

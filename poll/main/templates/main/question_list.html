@@ -7,19 +7,86 @@
   <h1 class="h3 mb-0">Questions</h1>
   <a class="btn btn-primary" href="{% url 'polls:question_create' %}">New Question</a>
 </div>
-<div class="list-group">
-  {% for q in questions %}
-  {% with latest=q.openai_batches.all|first %}
-  <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
-    <span>{{ q.text|truncatechars:80 }}</span>
-    <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-      {{ q.status|title }}
-    </span>
-  </a>
-  {% endwith %}
-  {% empty %}
-  <div class="alert alert-info">No questions.</div>
-  {% endfor %}
+
+<ul class="nav nav-underline mb-3" id="questionTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">Active</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab" aria-controls="failed" aria-selected="false">Failed</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" type="button" role="tab" aria-controls="archived" aria-selected="false">Archived</button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
+    <div class="list-group">
+      {% for q in active %}
+      {% with latest=q.openai_batches.all|first %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+          <span>{{ q.text|truncatechars:80 }}</span>
+          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            {{ q.status|title }}
+          </span>
+        </a>
+        <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
+        </form>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="alert alert-info">No questions.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
+    <div class="list-group">
+      {% for q in failed %}
+      {% with latest=q.openai_batches.all|first %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+          <span>{{ q.text|truncatechars:80 }}</span>
+          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            {{ q.status|title }}
+          </span>
+        </a>
+        <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
+        </form>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="alert alert-info">No failed questions.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="tab-pane fade" id="archived" role="tabpanel" aria-labelledby="archived-tab">
+    <div class="list-group">
+      {% for q in archived %}
+      {% with latest=q.openai_batches.all|first %}
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+          <span>{{ q.text|truncatechars:80 }}</span>
+          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            {{ q.status|title }}
+          </span>
+        </a>
+        <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Unarchive</button>
+        </form>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="alert alert-info">No archived questions.</div>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -27,7 +94,7 @@
 {{ block.super }}
 <script defer>
   document.addEventListener('DOMContentLoaded', () => {
-    const rows = document.querySelectorAll('[data-batch-id]');
+    const rows = document.querySelectorAll('.question-link[data-batch-id]');
 
     function badgeClass(status) {
       if (status === 'completed') return 'bg-success';
