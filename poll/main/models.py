@@ -8,6 +8,7 @@ import openai
 from pydantic import BaseModel, confloat
 from openai.lib._pydantic import to_strict_json_schema
 from django.db import models
+from django.conf import settings
 
 
 class ABResponse(BaseModel):
@@ -30,6 +31,13 @@ class Question(models.Model):
     text = models.CharField(max_length=500)  # Where would you like to move for living?
     context = models.JSONField(default=dict, blank=True)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
     choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Japan", ...]
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="questions",
+        null=True,
+        blank=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
