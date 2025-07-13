@@ -82,15 +82,15 @@
       </thead>
       <tbody>
         {% for batch in batches %}
-        <tr>
+        <tr data-batch-id="{{ batch.batch_id }}">
           <td class="font-monospace">{{ batch.batch_id }}</td>
           <td>
-            <span class="badge {% if batch.status == 'completed' %}bg-success{% elif batch.status == 'running' %}bg-info{% elif batch.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+            <span class="badge batch-status {% if batch.status == 'completed' %}bg-success{% elif batch.status == 'running' %}bg-info{% elif batch.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
               {{ batch.status|title }}
             </span>
           </td>
           <td>{{ batch.created_at|date:"Y‑m‑d H:i" }}</td>
-          <td>{{ batch.updated_at|date:"Y‑m‑d H:i" }}</td>
+          <td class="batch-updated">{{ batch.updated_at|date:"Y‑m‑d H:i" }}</td>
         </tr>
         {% empty %}
         <tr>
@@ -171,8 +171,8 @@
 
 {% endblock %}
 
-{% if has_answers %}
 {% block extra_js %}
+  {% if has_answers %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js" crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.14.0/dist/chartjs-chart-sankey.min.js" crossorigin="anonymous" defer></script>
@@ -341,10 +341,54 @@
 
       async function reloadAll() { await Promise.all([loadPreference(), loadHeatmap(), loadSankey(), loadElo(), loadConfidence()]); }
 
-      filters.forEach(sel => sel.addEventListener('change', reloadAll));
-      reloadAll();
+        filters.forEach(sel => sel.addEventListener('change', reloadAll));
+        reloadAll();
+      });
+  </script>
+  {% endif %}
+  <script defer>
+    document.addEventListener('DOMContentLoaded', () => {
+      const rows = document.querySelectorAll('tr[data-batch-id]');
+
+      function badgeClass(status) {
+        if (status === 'completed') return 'bg-success';
+        if (status === 'running') return 'bg-info';
+        if (status === 'failed') return 'bg-danger';
+        return 'bg-secondary';
+      }
+
+      async function updateRow(row) {
+        const id = row.dataset.batchId;
+        const resp = await fetch(`/api/batches/${id}/update-status`, {method: 'POST'});
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        const span = row.querySelector('.batch-status');
+        const updated = row.querySelector('.batch-updated');
+        const status = (data.status || '').toLowerCase();
+        span.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        span.className = `badge batch-status ${badgeClass(status)}`;
+        if (data.updated_at && updated) {
+          updated.textContent = data.updated_at.replace('T', ' ').slice(0, 16);
+        }
+        return status;
+      }
+
+      async function refreshAll() {
+        let pending = false;
+        for (const row of rows) {
+          const span = row.querySelector('.batch-status');
+          const status = span.textContent.trim().toLowerCase();
+          if (status !== 'completed' && status !== 'failed') {
+            pending = true;
+            await updateRow(row);
+          }
+        }
+        if (!pending) clearInterval(interval);
+      }
+
+      const interval = setInterval(refreshAll, 60000);
+      refreshAll();
     });
   </script>
 {% endblock %}
-{% endif %}
 
