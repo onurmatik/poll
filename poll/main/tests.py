@@ -116,8 +116,8 @@ class OpenAIBatchModelTests(TestCase):
         self.assertAlmostEqual(answer.confidence, 0.75)
 
 
-class QuestionDetailViewTests(TestCase):
-    def test_question_detail_view(self):
+class QuestionResultsViewTests(TestCase):
+    def test_question_results_view(self):
         q = Question.objects.create(text="example", choices=["A", "B"])
         batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
@@ -128,7 +128,9 @@ class QuestionDetailViewTests(TestCase):
             choice="A",
         )
 
-        url = reverse("polls:question_detail", args=[q.uuid])
+        q.status = "completed"
+        q.save()
+        url = reverse("polls:question_results", args=[q.uuid])
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -175,11 +177,12 @@ class QuestionListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, q1.text)
         self.assertNotContains(response, q2.text)
-        self.assertContains(response, reverse("polls:question_detail", args=[q1.uuid]))
 
     def test_question_list_view_shows_status(self):
         q1 = Question.objects.create(text="Where?", choices=["A", "B"])
         OpenAIBatch.objects.create(question=q1, data={"id": "b1", "status": "running"})
+        q1.status = "running"
+        q1.save()
         q2 = Question.objects.create(text="Another?", choices=["A", "B"])
 
         url = reverse("polls:question_list")
@@ -216,7 +219,7 @@ class QuestionCreateViewTests(TestCase):
         with patch.object(Question, "submit_batches") as sb:
             response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response["Location"], reverse("polls:question_detail", args=[q.uuid]))
+        self.assertEqual(response["Location"], reverse("polls:question_list"))
         sb.assert_called_once()
 
 

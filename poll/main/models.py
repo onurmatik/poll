@@ -34,6 +34,14 @@ class Question(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     archived = models.BooleanField(default=False)
+    STATUS_CHOICES = [
+        ("queued", "queued"),
+        ("running", "running"),
+        ("importing", "importing"),
+        ("completed", "completed"),
+        ("failed", "failed"),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="queued", db_index=True)
 
     def __str__(self) -> str:
         return self.text
@@ -150,6 +158,8 @@ class Question(models.Model):
 
         run_id = uuid.uuid4()
 
+        first_status = None
+
         for i, payload in enumerate(self.get_openai_batches()):
             buf = BytesIO()
 
@@ -171,11 +181,17 @@ class Question(models.Model):
             )
 
             # bookkeeping - store the full response object as JSON
-            OpenAIBatch.objects.create(
+            b = OpenAIBatch.objects.create(
                 question=self,
                 run_id=run_id,
                 data=batch.model_dump(),
             )
+            if first_status is None:
+                first_status = b.status
+
+        if first_status:
+            self.status = first_status
+            self.save(update_fields=["status"])
 
     def latest_answers(self):
         """Return answers from the most recently created batch."""
@@ -184,13 +200,13 @@ class Question(models.Model):
             return Answer.objects.none()
         return Answer.objects.filter(question=self, run_id=last_batch.run_id)
 
+    def latest_batch(self):
+        return self.openai_batches.order_by("-created_at").first()
+
     @property
     def latest_batch_status(self) -> str:
-        """Return the status of the most recently created batch."""
-        last_batch = self.openai_batches.order_by("-created_at").first()
-        if last_batch and last_batch.status:
-            return str(last_batch.status)
-        return "queued"
+        """Return the stored question status."""
+        return self.status
 
 
 class OpenAIBatch(models.Model):
@@ -253,6 +269,17 @@ class OpenAIBatch(models.Model):
         self.data = batch.model_dump()
         self.save()
 
+        q = self.question
+        if self.status == "completed":
+            if not Answer.objects.filter(run_id=self.run_id, question=q).exists():
+                q.status = "importing"
+                q.save(update_fields=["status"])
+                self.retrieve_results()
+            q.status = "completed"
+        else:
+            q.status = self.status or q.status
+        q.save(update_fields=["status"])
+
     def retrieve_results(self) -> List[dict]:
         """Download and parse the batch output file.
 
@@ -264,6 +291,10 @@ class OpenAIBatch(models.Model):
         """
         if not self.output_file_id:
             return []
+
+        q = self.question
+        q.status = "importing"
+        q.save(update_fields=["status"])
 
         client = openai.OpenAI()
         file_response = client.files.content(self.output_file_id)
@@ -330,6 +361,8 @@ class OpenAIBatch(models.Model):
                     confidence=parsed.get("confidence"),
                 )
 
+        q.status = "completed"
+        q.save(update_fields=["status"])
         return results
 
 
