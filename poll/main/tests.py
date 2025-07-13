@@ -8,6 +8,7 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory
 import csv
 import uuid
+from django.core.management import call_command
 
 from .models import Question, OpenAIBatch, Answer
 from .admin import AnswerAdmin
@@ -381,3 +382,38 @@ class BatchAPITests(TestCase):
 
         batch.refresh_from_db()
         self.assertEqual(batch.status, "completed")
+
+
+class ManagementCommandTests(TestCase):
+    def test_update_openai_batches_command(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        batch = OpenAIBatch.objects.create(
+            question=q,
+            data={"id": "batch_1", "status": "running"},
+        )
+
+        result_line = json.dumps({
+            "id": "batch_req_1",
+            "custom_id": f"q{q.pk}-A-B",
+            "response": {
+                "status_code": 200,
+                "body": {
+                    "choices": [
+                        {"message": {"content": "{\"answer\":\"A\",\"confidence\":0.9}"}}
+                    ]
+                },
+            },
+        })
+
+        mock_client = Mock()
+        mock_client.batches.retrieve.return_value = Mock(
+            model_dump=Mock(return_value={"id": batch.batch_id, "status": "completed", "output_file_id": "file_1"})
+        )
+        mock_client.files.content.return_value = Mock(text=result_line + "\n")
+
+        with patch("poll.main.models.openai.OpenAI", return_value=mock_client):
+            call_command("update_openai_batches")
+
+        batch.refresh_from_db()
+        self.assertEqual(batch.status, "completed")
+        self.assertEqual(Answer.objects.count(), 1)
