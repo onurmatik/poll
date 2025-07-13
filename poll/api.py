@@ -1,12 +1,13 @@
 from ninja import NinjaAPI, Router, Schema
 from django.shortcuts import get_object_or_404
 
-from .main.models import Question
+from .main.models import Question, OpenAIBatch
 
 api = NinjaAPI()
 
 chart_router = Router()
 question_router = Router()
+batch_router = Router()
 
 
 class QuestionCreateSchema(Schema):
@@ -171,5 +172,18 @@ def preference_flows(request, uuid: str):
     ]
     return {"labels": labels, "links": links}
 
+
+@batch_router.post("{batch_id}/update-status")
+def update_batch_status(request, batch_id: str):
+    """Refresh and return status info for an OpenAI batch."""
+    batch = get_object_or_404(OpenAIBatch, data__id=batch_id)
+    batch.update_status()
+    return {
+        "batch_id": batch.batch_id,
+        "status": batch.status,
+        "updated_at": batch.updated_at.isoformat(),
+    }
+
 api.add_router("/charts/", chart_router)
 api.add_router("/questions/", question_router)
+api.add_router("/batches/", batch_router)

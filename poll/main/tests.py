@@ -359,3 +359,25 @@ class QuestionAPITests(TestCase):
         self.assertEqual(q.text, payload["text"])
         self.assertEqual(q.context, payload["context"])
         self.assertEqual(q.choices, payload["choices"])
+
+
+class BatchAPITests(TestCase):
+    def test_update_status_endpoint(self):
+        q = Question.objects.create(text="q", choices=["A", "B"])
+        batch = OpenAIBatch.objects.create(question=q, data={"id": "b1", "status": "running"})
+
+        mock_client = Mock()
+        mock_client.batches.retrieve.return_value = Mock(
+            model_dump=Mock(return_value={"id": "b1", "status": "completed"})
+        )
+
+        with patch("poll.main.models.openai.OpenAI", return_value=mock_client):
+            url = f"/api/batches/{batch.batch_id}/update-status"
+            response = self.client.post(url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "completed")
+
+        batch.refresh_from_db()
+        self.assertEqual(batch.status, "completed")
