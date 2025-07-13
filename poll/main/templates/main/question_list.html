@@ -2,6 +2,14 @@
 
 {% block title %}Questions{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .question-item:hover { background-color: var(--bs-light); }
+  .nav-underline .nav-link:not(.active) { color: var(--bs-secondary); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4">
   <h1 class="h3 mb-0">Questions</h1>
@@ -25,13 +33,27 @@
     <div class="list-group">
       {% for q in active %}
       {% with latest=q.openai_batches.all|first %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
-          <span>{{ q.text|truncatechars:80 }}</span>
-          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-            {{ q.status|title }}
-          </span>
-        </a>
+      <div class="list-group-item question-item d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 me-3">
+          <a class="question-link text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+            <span>{{ q.text|truncatechars:80 }}</span>
+            <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ q.status|title }}
+            </span>
+          </a>
+          <div class="small text-muted mt-1">
+            {% if q.context %}
+              Context:
+              {% for key, val in q.context.items %}
+                {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
+              {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+            {% endif %}
+            {% if q.choices %}
+              {% if q.context %} | {% endif %}
+              Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+            {% endif %}
+          </div>
+        </div>
         <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Archive">
@@ -49,13 +71,27 @@
     <div class="list-group">
       {% for q in failed %}
       {% with latest=q.openai_batches.all|first %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
-          <span>{{ q.text|truncatechars:80 }}</span>
-          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-            {{ q.status|title }}
-          </span>
-        </a>
+      <div class="list-group-item question-item d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 me-3">
+          <a class="question-link text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+            <span>{{ q.text|truncatechars:80 }}</span>
+            <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ q.status|title }}
+            </span>
+          </a>
+          <div class="small text-muted mt-1">
+            {% if q.context %}
+              Context:
+              {% for key, val in q.context.items %}
+                {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
+              {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+            {% endif %}
+            {% if q.choices %}
+              {% if q.context %} | {% endif %}
+              Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+            {% endif %}
+          </div>
+        </div>
         <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
@@ -71,13 +107,27 @@
     <div class="list-group">
       {% for q in archived %}
       {% with latest=q.openai_batches.all|first %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <a class="question-link flex-grow-1 me-3 text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
-          <span>{{ q.text|truncatechars:80 }}</span>
-          <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-            {{ q.status|title }}
-          </span>
-        </a>
+      <div class="list-group-item question-item d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 me-3">
+          <a class="question-link text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% endif %}>
+            <span>{{ q.text|truncatechars:80 }}</span>
+            <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ q.status|title }}
+            </span>
+          </a>
+          <div class="small text-muted mt-1">
+            {% if q.context %}
+              Context:
+              {% for key, val in q.context.items %}
+                {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
+              {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+            {% endif %}
+            {% if q.choices %}
+              {% if q.context %} | {% endif %}
+              Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+            {% endif %}
+          </div>
+        </div>
         <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Unarchive">
