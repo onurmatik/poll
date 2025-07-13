@@ -8,7 +8,7 @@
   <a class="btn btn-primary" href="{% url 'polls:question_create' %}">New Question</a>
 </div>
 
-<ul class="nav nav-underline mb-3" id="questionTabs" role="tablist">
+<ul class="nav nav-underline mb-3 border-bottom" id="questionTabs" role="tablist">
   <li class="nav-item" role="presentation">
     <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">Active</button>
   </li>
@@ -34,7 +34,9 @@
         </a>
         <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
+          <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Archive">
+              <i class="bi bi-archive"></i>
+          </button>
         </form>
       </div>
       {% endwith %}
@@ -78,7 +80,9 @@
         </a>
         <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-sm btn-outline-secondary">Unarchive</button>
+          <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Unarchive">
+              <i class="bi bi-recycle"></i>
+          </button>
         </form>
       </div>
       {% endwith %}
