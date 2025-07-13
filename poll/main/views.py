@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 import csv
 import json
 
@@ -7,6 +8,7 @@ from .models import Question
 from .forms import QuestionForm
 
 
+@login_required
 def question_list(request):
     questions = (
         Question.objects.filter(archived=False)
@@ -16,6 +18,7 @@ def question_list(request):
     return render(request, "main/question_list.html", {"questions": questions})
 
 
+@login_required
 def question_results(request, uuid):
     question = get_object_or_404(Question, uuid=uuid)
     rendered_questions = question.render_all_questions()
@@ -42,6 +45,7 @@ def question_results(request, uuid):
     return render(request, "main/question_results.html", context)
 
 
+@login_required
 def question_answers_csv(request, uuid):
     question = get_object_or_404(Question, uuid=uuid)
 
@@ -64,6 +68,7 @@ def question_answers_csv(request, uuid):
     return response
 
 
+@login_required
 def question_create(request):
     """Create a new question or edit an existing one."""
     uuid_param = request.GET.get("uuid")
@@ -74,7 +79,10 @@ def question_create(request):
     if request.method == "POST":
         form = QuestionForm(request.POST, instance=instance)
         if form.is_valid():
-            question = form.save()
+            question = form.save(commit=False)
+            if not question.user_id:
+                question.user = request.user
+            question.save()
             return redirect("polls:question_review", uuid=question.uuid)
     else:
         form = QuestionForm(instance=instance)
@@ -82,6 +90,7 @@ def question_create(request):
     return render(request, "main/question_form.html", {"form": form})
 
 
+@login_required
 def question_review(request, uuid):
     """Display a read-only summary of the question and submit batches."""
     question = get_object_or_404(Question, uuid=uuid)

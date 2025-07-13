@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.contrib.auth.models import User
 import json
 
 from unittest.mock import Mock, patch
@@ -117,8 +118,12 @@ class OpenAIBatchModelTests(TestCase):
 
 
 class QuestionResultsViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("user", password="pass")
+        self.client.force_login(self.user)
+
     def test_question_results_view(self):
-        q = Question.objects.create(text="example", choices=["A", "B"])
+        q = Question.objects.create(text="example", choices=["A", "B"], user=self.user)
         batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
             question=q,
@@ -145,7 +150,7 @@ class QuestionResultsViewTests(TestCase):
         self.assertContains(response, "sankeyChart")
 
     def test_question_answers_csv_view(self):
-        q = Question.objects.create(text="q", choices=["A", "B"])
+        q = Question.objects.create(text="q", choices=["A", "B"], user=self.user)
         batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
             question=q,
@@ -167,9 +172,13 @@ class QuestionResultsViewTests(TestCase):
 
 
 class QuestionListViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("user", password="pass")
+        self.client.force_login(self.user)
+
     def test_question_list_view(self):
-        q1 = Question.objects.create(text="Where?", choices=["A", "B"])
-        q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True)
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)
+        q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True, user=self.user)
 
         url = reverse("polls:question_list")
         response = self.client.get(url)
@@ -179,11 +188,11 @@ class QuestionListViewTests(TestCase):
         self.assertNotContains(response, q2.text)
 
     def test_question_list_view_shows_status(self):
-        q1 = Question.objects.create(text="Where?", choices=["A", "B"])
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)
         OpenAIBatch.objects.create(question=q1, data={"id": "b1", "status": "running"})
         q1.status = "running"
         q1.save()
-        q2 = Question.objects.create(text="Another?", choices=["A", "B"])
+        q2 = Question.objects.create(text="Another?", choices=["A", "B"], user=self.user)
 
         url = reverse("polls:question_list")
         response = self.client.get(url)
@@ -194,6 +203,10 @@ class QuestionListViewTests(TestCase):
 
 
 class QuestionCreateViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("user", password="pass")
+        self.client.force_login(self.user)
+
     def test_get_create_view(self):
         url = reverse("polls:question_create")
         response = self.client.get(url)
@@ -214,7 +227,7 @@ class QuestionCreateViewTests(TestCase):
         self.assertEqual(q.text, "Where to go?")
 
     def test_post_review_submits_batches(self):
-        q = Question.objects.create(text="T?", choices=["A", "B"])
+        q = Question.objects.create(text="T?", choices=["A", "B"], user=self.user)
         url = reverse("polls:question_review", args=[q.uuid])
         with patch.object(Question, "submit_batches") as sb:
             response = self.client.post(url)
