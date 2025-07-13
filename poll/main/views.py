@@ -16,7 +16,7 @@ def question_list(request):
     return render(request, "main/question_list.html", {"questions": questions})
 
 
-def question_detail(request, uuid):
+def question_results(request, uuid):
     question = get_object_or_404(Question, uuid=uuid)
     rendered_questions = question.render_all_questions()
     num_variations = len(rendered_questions)
@@ -39,7 +39,7 @@ def question_detail(request, uuid):
         "batch_duration": batch_duration,
         "has_answers": has_answers,
     }
-    return render(request, "main/question_detail.html", context)
+    return render(request, "main/question_results.html", context)
 
 
 def question_answers_csv(request, uuid):
@@ -93,7 +93,7 @@ def question_review(request, uuid):
 
     if request.method == "POST":
         question.submit_batches()
-        return redirect("polls:question_detail", uuid=question.uuid)
+        return redirect("polls:question_list")
 
     return render(
         request,
