@@ -5,6 +5,7 @@ from .api import api
 
 
 urlpatterns = [
+    path('', include('poll.examples.urls')),
     path('admin/', admin.site.urls),
     path('polls/', include('poll.main.urls')),
     path('api/', api.urls),
