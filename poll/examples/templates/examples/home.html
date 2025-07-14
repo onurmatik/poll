@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Examples{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Examples</h1>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+  {% for example in examples %}
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ example.title }}</h5>
+        <p class="card-text">{{ example.description }}</p>
+      </div>
+      {% with example.questions.all|slice:':2' as sample_qs %}
+      {% if sample_qs %}
+      <ul class="list-group list-group-flush">
+        {% for q in sample_qs %}
+        <li class="list-group-item">
+          <a href="{% url 'polls:question_results' q.uuid %}">{{ q.text|truncatechars:80 }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+  {% empty %}
+  <p>No examples available.</p>
+  {% endfor %}
+</div>
+{% endblock %}
