@@ -201,6 +201,13 @@ class QuestionListViewTests(TestCase):
         self.assertContains(response, "Running")
         self.assertContains(response, "Draft")
 
+    def test_draft_question_links_to_edit(self):
+        q = Question.objects.create(text="Edit?", choices=["A", "B"], user=self.user)
+        url = reverse("polls:question_list")
+        response = self.client.get(url)
+        edit_url = f"{reverse('polls:question_create')}?uuid={q.uuid}"
+        self.assertContains(response, f'href="{edit_url}"')
+
 
 class QuestionCreateViewTests(TestCase):
     def setUp(self):
