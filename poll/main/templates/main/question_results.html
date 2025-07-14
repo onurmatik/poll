@@ -16,10 +16,17 @@
   <div class="d-flex align-items-start justify-content-between mb-4">
     <h1 class="h3 mb-0">{{ question.text|truncatechars:80 }}</h1>
     <div class="d-flex gap-2">
+      {% if question.status == 'draft' %}
+      <form method="post" action="{% url 'polls:question_delete' question.uuid %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">Delete</button>
+      </form>
+      {% else %}
       <form method="post" action="{% url 'polls:question_clone' question.uuid %}">
         {% csrf_token %}
         <button type="submit" class="btn btn-outline-primary">Clone</button>
       </form>
+      {% endif %}
       <a class="btn btn-outline-secondary" href="{% url 'polls:question_list' %}">
         ← Back to list
       </a>

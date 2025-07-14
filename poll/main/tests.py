@@ -199,7 +199,7 @@ class QuestionListViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Running")
-        self.assertContains(response, "Queued")
+        self.assertContains(response, "Draft")
 
 
 class QuestionCreateViewTests(TestCase):
@@ -225,6 +225,7 @@ class QuestionCreateViewTests(TestCase):
         q = Question.objects.first()
         self.assertIsNotNone(q)
         self.assertEqual(q.text, "Where to go?")
+        self.assertEqual(q.status, "draft")
 
     def test_post_review_submits_batches(self):
         q = Question.objects.create(text="T?", choices=["A", "B"], user=self.user)
@@ -234,6 +235,8 @@ class QuestionCreateViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], reverse("polls:question_list"))
         sb.assert_called_once()
+        q.refresh_from_db()
+        self.assertEqual(q.status, "queued")
 
 
 class QuestionCloneViewTests(TestCase):
@@ -252,6 +255,19 @@ class QuestionCloneViewTests(TestCase):
         self.assertEqual(new_q.text, original.text)
         self.assertEqual(new_q.user, self.user2)
         self.assertIn(str(new_q.uuid), response["Location"])
+
+
+class QuestionDeleteViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("user", password="pass")
+        self.client.force_login(self.user)
+
+    def test_delete_draft_question(self):
+        q = Question.objects.create(text="q", choices=["A", "B"], user=self.user)
+        url = reverse("polls:question_delete", args=[q.uuid])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.count(), 0)
 
 
 class AnswerAdminTests(TestCase):

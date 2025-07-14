@@ -9,6 +9,7 @@ urlpatterns = [
     path('create/', views.question_create, name='question_create'),
     path('<uuid:uuid>/review/', views.question_review, name='question_review'),
     path('<uuid:uuid>/toggle-archive/', views.question_toggle_archive, name='question_toggle_archive'),
+    path('<uuid:uuid>/delete/', views.question_delete, name='question_delete'),
     path('<uuid:uuid>/clone/', views.question_clone, name='question_clone'),
     path('<uuid:uuid>/', views.question_results, name='question_results'),
     path('', views.question_list, name='question_list'),

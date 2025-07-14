@@ -41,12 +41,21 @@
               {{ q.status|title }}
             </span>
           </a>
+          {% if q.status == 'draft' %}
+          <form method="post" action="{% url 'polls:question_delete' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-link text-danger" data-bs-toggle="tooltip" data-bs-title="Delete">
+                <i class="bi bi-trash"></i>
+            </button>
+          </form>
+          {% else %}
           <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
                 <i class="bi bi-files"></i>
             </button>
           </form>
+          {% endif %}
           <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Archive">
@@ -85,10 +94,17 @@
               {{ q.status|title }}
             </span>
           </a>
+          {% if q.status == 'draft' %}
+          <form method="post" action="{% url 'polls:question_delete' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+          {% else %}
           <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-secondary">Clone</button>
           </form>
+          {% endif %}
           <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
