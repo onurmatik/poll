@@ -236,6 +236,24 @@ class QuestionCreateViewTests(TestCase):
         sb.assert_called_once()
 
 
+class QuestionCloneViewTests(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user("u1", password="pass")
+        self.user2 = User.objects.create_user("u2", password="pass")
+        self.client.force_login(self.user2)
+
+    def test_clone_creates_new_question_for_user(self):
+        original = Question.objects.create(text="q", choices=["A", "B"], user=self.user1)
+        url = reverse("polls:question_clone", args=[original.uuid])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        new_q = Question.objects.exclude(pk=original.pk).first()
+        self.assertIsNotNone(new_q)
+        self.assertEqual(new_q.text, original.text)
+        self.assertEqual(new_q.user, self.user2)
+        self.assertIn(str(new_q.uuid), response["Location"])
+
+
 class AnswerAdminTests(TestCase):
     def setUp(self):
         self.admin_site = AdminSite()

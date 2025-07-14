@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 import csv
 import json
 
@@ -138,4 +139,20 @@ def question_toggle_archive(request, uuid):
     if request.method == "POST":
         question.archived = not question.archived
         question.save(update_fields=["archived"])
+    return redirect("polls:question_list")
+
+
+@login_required
+def question_clone(request, uuid):
+    """Duplicate an existing question for the current user."""
+    original = get_object_or_404(Question, uuid=uuid)
+    if request.method == "POST":
+        clone = Question.objects.create(
+            text=original.text,
+            context=original.context,
+            choices=original.choices,
+            user=request.user,
+        )
+        edit_url = f"{reverse('polls:question_create')}?uuid={clone.uuid}"
+        return redirect(edit_url)
     return redirect("polls:question_list")
