@@ -41,6 +41,12 @@
               {{ q.status|title }}
             </span>
           </a>
+          <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
+                <i class="bi bi-files"></i>
+            </button>
+          </form>
           <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Archive">
@@ -79,6 +85,10 @@
               {{ q.status|title }}
             </span>
           </a>
+          <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Clone</button>
+          </form>
           <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
@@ -115,6 +125,12 @@
               {{ q.status|title }}
             </span>
           </a>
+          <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
+                <i class="bi bi-files"></i>
+            </button>
+          </form>
           <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Unarchive">
