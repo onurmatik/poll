@@ -15,7 +15,7 @@ def question_list(request):
     active = (
         Question.objects.filter(
             archived=False,
-            status__in=["queued", "running", "completed", "importing"],
+            status__in=["draft", "queued", "running", "completed", "importing"],
         )
         .order_by("-created_at")
         .prefetch_related("openai_batches")
@@ -117,6 +117,8 @@ def question_review(request, uuid):
     total_queries = num_variations * len(choice_pairs)
 
     if request.method == "POST":
+        question.status = "queued"
+        question.save(update_fields=["status"])
         question.submit_batches()
         return redirect("polls:question_list")
 
@@ -155,4 +157,13 @@ def question_clone(request, uuid):
         )
         edit_url = f"{reverse('polls:question_create')}?uuid={clone.uuid}"
         return redirect(edit_url)
+    return redirect("polls:question_list")
+
+
+@login_required
+def question_delete(request, uuid):
+    """Delete a question draft."""
+    question = get_object_or_404(Question, uuid=uuid)
+    if request.method == "POST":
+        question.delete()
     return redirect("polls:question_list")

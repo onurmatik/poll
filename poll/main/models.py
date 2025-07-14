@@ -43,13 +43,14 @@ class Question(models.Model):
 
     archived = models.BooleanField(default=False)
     STATUS_CHOICES = [
+        ("draft", "draft"),
         ("queued", "queued"),
         ("running", "running"),
         ("importing", "importing"),
         ("completed", "completed"),
         ("failed", "failed"),
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="queued", db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft", db_index=True)
 
     def __str__(self) -> str:
         return self.text
@@ -166,8 +167,6 @@ class Question(models.Model):
 
         run_id = uuid.uuid4()
 
-        first_status = None
-
         for i, payload in enumerate(self.get_openai_batches()):
             buf = BytesIO()
 
@@ -189,17 +188,15 @@ class Question(models.Model):
             )
 
             # bookkeeping - store the full response object as JSON
-            b = OpenAIBatch.objects.create(
+            OpenAIBatch.objects.create(
                 question=self,
                 run_id=run_id,
                 data=batch.model_dump(),
             )
-            if first_status is None:
-                first_status = b.status
 
-        if first_status:
-            self.status = first_status
-            self.save(update_fields=["status"])
+        # Record that the question has been queued for processing
+        self.status = "queued"
+        self.save(update_fields=["status"])
 
     def latest_answers(self):
         """Return answers from the most recently created batch."""
