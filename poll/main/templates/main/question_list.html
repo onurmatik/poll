@@ -21,13 +21,13 @@
     <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">Active</button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button" role="tab" aria-controls="examples" aria-selected="false">Examples</button>
+    <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" type="button" role="tab" aria-controls="archived" aria-selected="false">Archived</button>
   </li>
   <li class="nav-item" role="presentation">
     <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab" aria-controls="failed" aria-selected="false">Failed</button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" type="button" role="tab" aria-controls="archived" aria-selected="false">Archived</button>
+    <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button" role="tab" aria-controls="examples" aria-selected="false">Examples</button>
   </li>
 </ul>
 
@@ -85,11 +85,11 @@
       {% endfor %}
     </div>
   </div>
-  <div class="tab-pane fade" id="examples" role="tabpanel" aria-labelledby="examples-tab">
-    <div class="list-group list-group-flush">
-      {% for q in examples %}
+  <div class="tab-pane fade" id="archived" role="tabpanel" aria-labelledby="archived-tab">
+    <div class="list-group">
+      {% for q in archived %}
       {% with latest=q.openai_batches.all|first %}
-      <div class="list-group-item question-item px-2">
+      <div class="list-group-item question-item">
         <div class="d-flex justify-content-between align-items-center">
           <a class="question-link flex-grow-1 me-3 text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% elif q.status == 'draft' %}href="{% url 'polls:question_create' %}?uuid={{ q.uuid }}"{% endif %}>
             <span>{{ q.text|truncatechars:80 }}</span>
@@ -97,10 +97,22 @@
               {{ q.status|title }}
             </span>
           </a>
+          <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="me-1">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
+                <i class="bi bi-files"></i>
+            </button>
+          </form>
+          <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Unarchive">
+                <i class="bi bi-recycle"></i>
+            </button>
+          </form>
         </div>
         <div class="small text-muted mt-1">
           {% if q.context %}
-            By:
+            Context:
             {% for key, val in q.context.items %}
               {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
             {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
@@ -113,7 +125,7 @@
       </div>
       {% endwith %}
       {% empty %}
-      <div class="alert alert-info mt-3">No example questions.</div>
+      <div class="alert alert-info mt-3">No archived questions.</div>
       {% endfor %}
     </div>
   </div>
@@ -164,11 +176,11 @@
       {% endfor %}
     </div>
   </div>
-  <div class="tab-pane fade" id="archived" role="tabpanel" aria-labelledby="archived-tab">
-    <div class="list-group">
-      {% for q in archived %}
+  <div class="tab-pane fade" id="examples" role="tabpanel" aria-labelledby="examples-tab">
+    <div class="list-group list-group-flush">
+      {% for q in examples %}
       {% with latest=q.openai_batches.all|first %}
-      <div class="list-group-item question-item">
+      <div class="list-group-item question-item px-2">
         <div class="d-flex justify-content-between align-items-center">
           <a class="question-link flex-grow-1 me-3 text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% elif q.status == 'draft' %}href="{% url 'polls:question_create' %}?uuid={{ q.uuid }}"{% endif %}>
             <span>{{ q.text|truncatechars:80 }}</span>
@@ -182,16 +194,10 @@
                 <i class="bi bi-files"></i>
             </button>
           </form>
-          <form method="post" action="{% url 'polls:question_toggle_archive' q.uuid %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Unarchive">
-                <i class="bi bi-recycle"></i>
-            </button>
-          </form>
         </div>
         <div class="small text-muted mt-1">
           {% if q.context %}
-            Context:
+            By:
             {% for key, val in q.context.items %}
               {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
             {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
@@ -204,7 +210,7 @@
       </div>
       {% endwith %}
       {% empty %}
-      <div class="alert alert-info mt-3">No archived questions.</div>
+      <div class="alert alert-info mt-3">No example questions.</div>
       {% endfor %}
     </div>
   </div>
