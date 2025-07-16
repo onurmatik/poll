@@ -180,12 +180,18 @@ class QuestionListViewTests(TestCase):
         q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)
         q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True, user=self.user)
 
+        q3 = Question.objects.create(text="Example?", choices=["A", "B"])
+
         url = reverse("polls:question_list")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, q1.text)
         self.assertContains(response, q2.text)
+        self.assertContains(response, q3.text)
+
+        self.assertIn(q3, response.context["examples"])
+        self.assertNotIn(q3, response.context["active"])
 
     def test_question_list_view_shows_status(self):
         q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)

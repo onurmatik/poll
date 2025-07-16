@@ -16,6 +16,15 @@ def question_list(request):
         Question.objects.filter(
             archived=False,
             status__in=["draft", "queued", "running", "completed", "importing"],
+            user__isnull=False,
+        )
+        .order_by("-created_at")
+        .prefetch_related("openai_batches")
+    )
+    examples = (
+        Question.objects.filter(
+            archived=False,
+            user__isnull=True,
         )
         .order_by("-created_at")
         .prefetch_related("openai_batches")
@@ -30,7 +39,12 @@ def question_list(request):
         .order_by("-created_at")
         .prefetch_related("openai_batches")
     )
-    context = {"active": active, "failed": failed, "archived": archived}
+    context = {
+        "active": active,
+        "examples": examples,
+        "failed": failed,
+        "archived": archived,
+    }
     return render(request, "main/question_list.html", context)
 
 
