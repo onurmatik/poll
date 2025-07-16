@@ -21,6 +21,9 @@
     <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">Active</button>
   </li>
   <li class="nav-item" role="presentation">
+    <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button" role="tab" aria-controls="examples" aria-selected="false">Examples</button>
+  </li>
+  <li class="nav-item" role="presentation">
     <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab" aria-controls="failed" aria-selected="false">Failed</button>
   </li>
   <li class="nav-item" role="presentation">
@@ -79,6 +82,38 @@
       {% endwith %}
       {% empty %}
       <div class="alert alert-info mt-3">No questions.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="tab-pane fade" id="examples" role="tabpanel" aria-labelledby="examples-tab">
+    <div class="list-group list-group-flush">
+      {% for q in examples %}
+      {% with latest=q.openai_batches.all|first %}
+      <div class="list-group-item question-item px-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <a class="question-link flex-grow-1 me-3 text-black text-decoration-none d-flex justify-content-between align-items-center" data-target-href="{% url 'polls:question_results' q.uuid %}" data-batch-id="{{ latest.batch_id|default:'' }}" {% if q.status == 'completed' %}href="{% url 'polls:question_results' q.uuid %}"{% elif q.status == 'draft' %}href="{% url 'polls:question_create' %}?uuid={{ q.uuid }}"{% endif %}>
+            <span>{{ q.text|truncatechars:80 }}</span>
+            <span class="badge {% if q.status == 'completed' %}bg-success{% elif q.status == 'running' %}bg-info{% elif q.status == 'failed' %}bg-danger{% elif q.status == 'importing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ q.status|title }}
+            </span>
+          </a>
+        </div>
+        <div class="small text-muted mt-1">
+          {% if q.context %}
+            By:
+            {% for key, val in q.context.items %}
+              {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
+            {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+          {% endif %}
+          {% if q.choices %}
+            {% if q.context %} | {% endif %}
+            Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="alert alert-info mt-3">No example questions.</div>
       {% endfor %}
     </div>
   </div>
