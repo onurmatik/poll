@@ -2,9 +2,16 @@
 
 {% block title %}Examples{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .question-item:hover { background-color: var(--bs-light); }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1 class="h3 mb-4">Examples</h1>
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 g-4">
   {% for example in examples %}
   <div class="col">
     <div class="card h-100">
@@ -16,8 +23,32 @@
       {% if sample_qs %}
       <ul class="list-group list-group-flush">
         {% for q in sample_qs %}
-        <li class="list-group-item">
-          <a href="{% url 'polls:question_results' q.uuid %}">{{ q.text|truncatechars:80 }}</a>
+        <li class="list-group-item question-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <a class="flex-grow-1 me-3 text-black text-decoration-none" href="{% url 'polls:question_results' q.uuid %}">{{ q.text|truncatechars:80 }}</a>
+            <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="ms-1">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
+                  <i class="bi bi-files"></i>
+              </button>
+            </form>
+          </div>
+          <div class="small text-muted mt-1">
+            {% if q.context %}
+              By:
+              {% for key, val in q.context.items %}
+                {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
+              {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+            {% endif %}
+            {% if q.choices %}
+              {% if q.context %} | {% endif %}
+              Choices: {{ q.choices|slice:':3'|join:', ' }}{% if q.choices|length > 3 %}, ...{% endif %}
+            {% endif %}
+            {% if q.tags %}
+              {% if q.context or q.choices %} | {% endif %}
+              Tags: {{ q.tags|slice:':3'|join:', ' }}{% if q.tags|length > 3 %}, ...{% endif %}
+            {% endif %}
+          </div>
         </li>
         {% endfor %}
       </ul>
