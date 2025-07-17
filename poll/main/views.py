@@ -16,7 +16,7 @@ def question_list(request):
         Question.objects.filter(
             archived=False,
             status__in=["draft", "queued", "running", "completed", "importing"],
-            user__isnull=False,
+            created_by__isnull=False,
         )
         .order_by("-created_at")
         .prefetch_related("openai_batches")
@@ -24,7 +24,7 @@ def question_list(request):
     examples = (
         Question.objects.filter(
             archived=False,
-            user__isnull=True,
+            created_by__isnull=True,
         )
         .order_by("-created_at")
         .prefetch_related("openai_batches")
@@ -110,8 +110,8 @@ def question_create(request):
         form = QuestionForm(request.POST, instance=instance)
         if form.is_valid():
             question = form.save(commit=False)
-            if not question.user_id:
-                question.user = request.user
+            if not question.created_by_id:
+                question.created_by = request.user
             question.save()
             return redirect("polls:question_review", uuid=question.uuid)
     else:
@@ -167,7 +167,7 @@ def question_clone(request, uuid):
             text=original.text,
             context=original.context,
             choices=original.choices,
-            user=request.user,
+            created_by=request.user,
         )
         edit_url = f"{reverse('polls:question_create')}?uuid={clone.uuid}"
         return redirect(edit_url)

@@ -32,7 +32,7 @@ class Question(models.Model):
     context = models.JSONField(default=dict, blank=True)  # {"country": ["Turkey", "Mexico", ...], "gender": ["man", "woman"]}
     choices = models.JSONField(default=list)  # ["Turkey", "Mexico", "Germany", "Japan", ...]
     tags = models.JSONField(default=list, blank=True)
-    user = models.ForeignKey(
+    created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="questions",

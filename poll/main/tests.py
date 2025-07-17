@@ -123,7 +123,7 @@ class QuestionResultsViewTests(TestCase):
         self.client.force_login(self.user)
 
     def test_question_results_view(self):
-        q = Question.objects.create(text="example", choices=["A", "B"], user=self.user)
+        q = Question.objects.create(text="example", choices=["A", "B"], created_by=self.user)
         batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
             question=q,
@@ -150,7 +150,7 @@ class QuestionResultsViewTests(TestCase):
         self.assertContains(response, "sankeyChart")
 
     def test_question_answers_csv_view(self):
-        q = Question.objects.create(text="q", choices=["A", "B"], user=self.user)
+        q = Question.objects.create(text="q", choices=["A", "B"], created_by=self.user)
         batch = OpenAIBatch.objects.create(question=q, run_id=uuid.uuid4(), data={"id": "b1"})
         a = Answer.objects.create(
             question=q,
@@ -177,8 +177,8 @@ class QuestionListViewTests(TestCase):
         self.client.force_login(self.user)
 
     def test_question_list_view(self):
-        q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)
-        q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True, user=self.user)
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"], created_by=self.user)
+        q2 = Question.objects.create(text="Archived?", choices=["A", "B"], archived=True, created_by=self.user)
 
         q3 = Question.objects.create(text="Example?", choices=["A", "B"])
 
@@ -194,11 +194,11 @@ class QuestionListViewTests(TestCase):
         self.assertNotIn(q3, response.context["active"])
 
     def test_question_list_view_shows_status(self):
-        q1 = Question.objects.create(text="Where?", choices=["A", "B"], user=self.user)
+        q1 = Question.objects.create(text="Where?", choices=["A", "B"], created_by=self.user)
         OpenAIBatch.objects.create(question=q1, data={"id": "b1", "status": "running"})
         q1.status = "running"
         q1.save()
-        q2 = Question.objects.create(text="Another?", choices=["A", "B"], user=self.user)
+        q2 = Question.objects.create(text="Another?", choices=["A", "B"], created_by=self.user)
 
         url = reverse("polls:question_list")
         response = self.client.get(url)
@@ -208,7 +208,7 @@ class QuestionListViewTests(TestCase):
         self.assertContains(response, "Draft")
 
     def test_draft_question_links_to_edit(self):
-        q = Question.objects.create(text="Edit?", choices=["A", "B"], user=self.user)
+        q = Question.objects.create(text="Edit?", choices=["A", "B"], created_by=self.user)
         url = reverse("polls:question_list")
         response = self.client.get(url)
         edit_url = f"{reverse('polls:question_create')}?uuid={q.uuid}"
@@ -241,7 +241,7 @@ class QuestionCreateViewTests(TestCase):
         self.assertEqual(q.status, "draft")
 
     def test_post_review_submits_batches(self):
-        q = Question.objects.create(text="T?", choices=["A", "B"], user=self.user)
+        q = Question.objects.create(text="T?", choices=["A", "B"], created_by=self.user)
         url = reverse("polls:question_review", args=[q.uuid])
         with patch.object(Question, "submit_batches") as sb:
             response = self.client.post(url)
@@ -259,14 +259,14 @@ class QuestionCloneViewTests(TestCase):
         self.client.force_login(self.user2)
 
     def test_clone_creates_new_question_for_user(self):
-        original = Question.objects.create(text="q", choices=["A", "B"], user=self.user1)
+        original = Question.objects.create(text="q", choices=["A", "B"], created_by=self.user1)
         url = reverse("polls:question_clone", args=[original.uuid])
         response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
         new_q = Question.objects.exclude(pk=original.pk).first()
         self.assertIsNotNone(new_q)
         self.assertEqual(new_q.text, original.text)
-        self.assertEqual(new_q.user, self.user2)
+        self.assertEqual(new_q.created_by, self.user2)
         self.assertIn(str(new_q.uuid), response["Location"])
 
 
@@ -276,7 +276,7 @@ class QuestionDeleteViewTests(TestCase):
         self.client.force_login(self.user)
 
     def test_delete_draft_question(self):
-        q = Question.objects.create(text="q", choices=["A", "B"], user=self.user)
+        q = Question.objects.create(text="q", choices=["A", "B"], created_by=self.user)
         url = reverse("polls:question_delete", args=[q.uuid])
         response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
