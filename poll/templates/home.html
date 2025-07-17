@@ -82,8 +82,8 @@
             {% if q.context %}
               By:
               {% for key, val in q.context.items %}
-                {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
-              {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
+                {{ key }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
             {% endif %}
             <div>
               {{ q.choices|join:' | ' }}
