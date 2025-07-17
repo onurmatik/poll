@@ -1,21 +1,66 @@
 {% extends "base.html" %}
 
-{% block title %}Examples{% endblock %}
+{% block title %}Poll.pub polling app{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
 <style>
-  .question-item:hover { background-color: var(--bs-light); }
+  body {
+    background-color: #f8f9fa;
+  }
+  .question-item:hover {
+    background-color: var(--bs-light);
+  }
+  .lead {
+    font-size: 1.25rem;
+    color: #6c757d;
+  }
+  h1 {
+    font-weight: 700;
+  }
+  h2 {
+    font-weight: 400;
+    color: #495057;
+  }
+  .card {
+    border-radius: 1rem;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+  }
+  .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  .card-text {
+    font-size: 0.95rem;
+    color: #5c636a;
+  }
+  .text-muted {
+    font-size: 0.8rem;
+  }
+  .btn-link i {
+    font-size: 1.1rem;
+  }
+  .create-btn {
+    margin-top: 3rem;
+    text-align: center;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-4">Examples</h1>
+<h1 class="fs-2 mb-2 text-dark">Poll.pub</h1>
+<h2 class="fs-5 mb-4 fst-italic">“Synthetic-respondent” polling app</h2>
+<p class="lead mb-5">Shrink polling cycles from days to minutes using persona-powered, instant-response polling engines.</p>
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 g-4">
   {% for example in examples %}
   <div class="col">
-    <div class="card h-100">
-      <div class="card-body">
+    <div class="card h-100 border-0">
+      <div class="card-body pb-2">
         <h5 class="card-title">{{ example.title }}</h5>
         <p class="card-text">{{ example.description }}</p>
       </div>
@@ -23,13 +68,13 @@
       {% if sample_qs %}
       <ul class="list-group list-group-flush">
         {% for q in sample_qs %}
-        <li class="list-group-item question-item">
+        <li class="list-group-item question-item py-3 px-4">
           <div class="d-flex justify-content-between align-items-center">
-            <a class="flex-grow-1 me-3 text-black text-decoration-none" href="{% url 'polls:question_results' q.uuid %}">{{ q.text|truncatechars:80 }}</a>
+            <a class="flex-grow-1 me-3 text-dark text-decoration-none fw-medium" href="{% url 'polls:question_results' q.uuid %}">{{ q.text }}</a>
             <form method="post" action="{% url 'polls:question_clone' q.uuid %}" class="ms-1">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-link text-secondary" data-bs-toggle="tooltip" data-bs-title="Clone">
-                  <i class="bi bi-files"></i>
+                <i class="bi bi-files"></i>
               </button>
             </form>
           </div>
@@ -40,14 +85,14 @@
                 {% if forloop.counter <= 2 %}{{ key }}{% if forloop.counter < 2 and q.context|length > 1 %}, {% endif %}{% endif %}
               {% endfor %}{% if q.context|length > 2 %}, ...{% endif %}
             {% endif %}
-            {% if q.choices %}
-              {% if q.context %} | {% endif %}
-              Choices: {{ q.choices|slice:':3'|join:', ' }}{% if q.choices|length > 3 %}, ...{% endif %}
-            {% endif %}
-            {% if q.tags %}
-              {% if q.context or q.choices %} | {% endif %}
-              Tags: {{ q.tags|slice:':3'|join:', ' }}{% if q.tags|length > 3 %}, ...{% endif %}
-            {% endif %}
+            <div>
+              {{ q.choices|join:' | ' }}
+            </div>
+            <div class="mt-1">
+            {% for tag in q.tags %}
+                <span class="badge bg-secondary">{{ tag }}</span>
+            {% endfor %}
+            </div>
           </div>
         </li>
         {% endfor %}
@@ -56,8 +101,12 @@
       {% endwith %}
     </div>
   </div>
-  {% empty %}
-  <p>No examples available.</p>
   {% endfor %}
+</div>
+<div class="create-btn">
+  <a href="{% url 'polls:question_create' %}" class="btn btn-secondary btn-lg shadow-sm my-4">
+      <i class="bi bi-plus-circle"></i>
+      Create a New Poll
+  </a>
 </div>
 {% endblock %}
