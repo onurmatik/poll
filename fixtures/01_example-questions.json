@@ -1,0 +1,225 @@
+[
+  {
+    "model": "main.question",
+    "pk": 1,
+    "fields": {
+      "text": "Which mode do you use in your main productivity app?",
+      "context": {
+        "user_type": ["freelancer", "corporate employee", "student", "retired"],
+        "platform": ["iOS", "Android", "Web", "Desktop"]
+      },
+      "choices": ["Light mode", "Dark mode"],
+      "tags": ["productivity", "UX"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 2,
+    "fields": {
+      "text": "Which version of our new product slogan grabs your attention the most?",
+      "context": {
+        "audience": ["18-24", "25-34", "35-44"],
+        "region": ["North America", "Europe"]
+      },
+      "choices": [
+        "Experience Innovation Like Never Before",
+        "Smarter, Simpler, Better – That's Our Promise",
+        "Power Your Day with Performance You Can Feel",
+        "Designed for You. Built for Life."
+      ],
+      "tags": ["marketing", "branding"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 3,
+    "fields": {
+      "text": "Where would you most likely go when you feel seriously unwell and need medical help?",
+      "context": {
+        "age_group": ["under 18", "18-35", "36-64", "65+"],
+        "insurance_status": ["insured", "uninsured"],
+        "housing_status": ["housed", "homeless"]
+      },
+      "choices": [
+        "Public hospital",
+        "Community health clinic",
+        "Private doctor or clinic",
+        "Emergency room",
+        "Traditional healer",
+        "Nowhere / I wait it out"
+      ],
+      "tags": ["healthcare", "accessibility"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 4,
+    "fields": {
+      "text": "Which of the following messages is most persuasive for protecting your wealth during uncertain global market conditions?",
+      "context": {
+        "segment": ["affluent", "expatriate", "frequent traveler"],
+        "age_group": ["35-50", "50-65", "65+"],
+        "region": ["Europe", "North America", "Asia"]
+      },
+      "choices": [
+        "Preserve your legacy with multi-jurisdictional trust structures.",
+        "Secure global access to your assets with a Swiss private bank.",
+        "Shield your wealth with USD-denominated instruments in stable economies.",
+        "Navigate volatility with AI-powered portfolio rebalancing strategies.",
+        "Maintain liquidity through global real estate-backed credit lines."
+      ],
+      "tags": ["finance", "wealth management"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 5,
+    "fields": {
+      "text": "Which of the following statements best reflects your view on immigration reform?",
+      "context": {
+        "region": ["Midwest", "South", "Northeast", "West"],
+        "age_group": ["18-29", "30-44", "45-64", "65+"]
+      },
+      "choices": [
+        "We should strengthen our borders and prioritize American jobs first.",
+        "Immigration reform should ensure a path to citizenship for law-abiding immigrants.",
+        "America benefits from immigrants, and we need a modern system to support legal immigration.",
+        "Illegal immigration threatens our economy and safety—we need stricter enforcement."
+      ],
+      "tags": ["politics", "immigration"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 6,
+    "fields": {
+      "text": "If inflation stays above 6% for the next 12 months, which of the following actions are you most likely to take?",
+      "context": {
+        "income_bracket": ["low", "middle", "high"],
+        "country": ["USA", "Germany", "India"],
+        "age_group": ["18-25", "26-40", "41-60", "60+"]
+      },
+      "choices": [
+        "Postpone major purchases (e.g. car, home appliances)",
+        "Switch to cheaper brands for regular purchases",
+        "Seek additional sources of income (e.g. gig work, part-time job)",
+        "Invest in inflation-protected assets (e.g. gold, real estate)",
+        "Make no significant changes to spending habits"
+      ],
+      "tags": ["consumer behavior"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 7,
+    "fields": {
+      "text": "Which of these slogans sounds the most inclusive and respectful?",
+      "context": {
+        "region": ["US", "UK", "CA"],
+        "role": ["Trust-and-Safety", "DEI"]
+      },
+      "choices": [
+        "Empowering everyone to succeed",
+        "For hardworking men and women everywhere",
+        "Built for the bold and brave",
+        "Helping people like you thrive"
+      ],
+      "tags": ["diversity", "communication"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 8,
+    "fields": {
+      "text": "Which version of the fee disclosure is easier to understand?",
+      "context": {
+        "literacy_level": ["low", "medium", "high"],
+        "age_group": ["18-25", "26-40", "41-60", "60+"],
+        "language": ["English", "Spanish"]
+      },
+      "choices": [
+        "We charge a 1% annual management fee based on your portfolio balance.",
+        "Each year, you pay $10 for every $1,000 in your account."
+      ],
+      "tags": ["financial literacy", "UX"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 9,
+    "fields": {
+      "text": "Which news source would you rely on more for political information?",
+      "context": {
+        "country": ["USA", "UK", "Germany", "India"],
+        "age_group": ["18-24", "25-34", "35-44", "45+"]
+      },
+      "choices": [
+        "BBC",
+        "CNN",
+        "Fox News",
+        "Al Jazeera",
+        "The Guardian",
+        "Reddit",
+        "Twitter",
+        "Local newspaper"
+      ],
+      "tags": ["media", "politics"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 10,
+    "fields": {
+      "text": "Which beverage would you prefer to stay productive at work?",
+      "context": {
+        "department": ["HR", "Engineering", "Marketing"],
+        "experience_level": ["junior", "mid", "senior"]
+      },
+      "choices": [
+        "Coffee from the espresso machine",
+        "Green tea (organic)",
+        "Tap water",
+        "Energy drinks",
+        "I won’t drink anything"
+      ],
+      "tags": ["productivity"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 11,
+    "fields": {
+      "text": "Which guild would you trust to guard the Vault of Echoes?",
+      "context": {
+        "faction_alignment": ["neutral", "royalist", "rebel"]
+      },
+      "choices": [
+        "The Obsidian Watch",
+        "The Silver Veil",
+        "The Embercloaks",
+        "The Hollow Pact"
+      ],
+      "tags": ["fantasy", "gaming"]
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 12,
+    "fields": {
+      "text": "Which of the following do you believe is the primary driver of climate change?",
+      "context": {
+        "region": ["North America", "Europe", "Asia", "Africa", "South America", "Oceania"],
+        "age_group": ["18-24", "25-34", "35-49", "50-64", "65+"],
+        "education_level": ["No High School", "High school", "Bachelor's", "Master's", "PhD"]
+      },
+      "choices": [
+        "Human industrial activity and fossil fuels",
+        "Natural cycles and solar variation",
+        "Agricultural practices and deforestation",
+        "Government and corporate manipulation",
+        "I don't believe human activity caused climate change"
+      ],
+      "tags": ["climate", "environment"]
+    }
+  }
+]

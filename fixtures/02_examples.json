@@ -1,0 +1,56 @@
+[
+  {
+    "model": "examples.example",
+    "pk": 1,
+    "fields": {
+      "title": "Rapid, low-cost exploratory research",
+      "description": "Early-stage idea or message testing",
+      "questions": [1, 2]
+    }
+  },
+  {
+    "model": "examples.example",
+    "pk": 2,
+    "fields": {
+      "title": "Filling hard-to-reach or privacy-sensitive gaps",
+      "description": "Personify expensive, time-consuming, or ethically fraught to recruit demographies (e.g., teens, high-net-worth individuals, patients with rare conditions).",
+      "questions": [3, 4]
+    }
+  },
+  {
+    "model": "examples.example",
+    "pk": 3,
+    "fields": {
+      "title": "Sensitivity analysis & “what-if” scenario modeling",
+      "description": "Synthetic personas let analysts tweak age, income, ideology, etc. and instantly see directional effects.",
+      "questions": [5, 6]
+    }
+  },
+  {
+    "model": "examples.example",
+    "pk": 4,
+    "fields": {
+      "title": "Message safety, bias, and fairness audits",
+      "description": "Detect language that may alienate or misrepresent certain groups before a campaign or product launch.",
+      "questions": [7, 8]
+    }
+  },
+  {
+    "model": "examples.example",
+    "pk": 5,
+    "fields": {
+      "title": "Education & training simulations",
+      "description": "Students or trainees can practice survey design, interviewing, and data interpretation without needing live respondents.",
+      "questions": [9, 10]
+    }
+  },
+  {
+    "model": "examples.example",
+    "pk": 6,
+    "fields": {
+      "title": "Creative storytelling & interactive media",
+      "description": "Writers or game designers can populate fictional worlds with believable “public opinion” data.",
+      "questions": [11, 12]
+    }
+  }
+]
