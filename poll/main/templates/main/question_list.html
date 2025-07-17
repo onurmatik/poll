@@ -77,6 +77,10 @@
             {% if q.context %} | {% endif %}
             Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
+          {% if q.tags %}
+            {% if q.context or q.choices %} | {% endif %}
+            Tags: {{ q.tags|join:", " }}
+          {% endif %}
         </div>
       </div>
       {% endwith %}
@@ -120,6 +124,10 @@
           {% if q.choices %}
             {% if q.context %} | {% endif %}
             Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+          {% endif %}
+          {% if q.tags %}
+            {% if q.context or q.choices %} | {% endif %}
+            Tags: {{ q.tags|join:", " }}
           {% endif %}
         </div>
       </div>
@@ -168,6 +176,10 @@
             {% if q.context %} | {% endif %}
             Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
+          {% if q.tags %}
+            {% if q.context or q.choices %} | {% endif %}
+            Tags: {{ q.tags|join:", " }}
+          {% endif %}
         </div>
       </div>
       {% endwith %}
@@ -205,6 +217,10 @@
           {% if q.choices %}
             {% if q.context %} | {% endif %}
             Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
+          {% endif %}
+          {% if q.tags %}
+            {% if q.context or q.choices %} | {% endif %}
+            Tags: {{ q.tags|join:", " }}
           {% endif %}
         </div>
       </div>
