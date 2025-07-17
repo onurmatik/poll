@@ -214,21 +214,6 @@ class QuestionListViewTests(TestCase):
         edit_url = f"{reverse('polls:question_create')}?uuid={q.uuid}"
         self.assertContains(response, f'href="{edit_url}"')
 
-    def test_list_displays_tags_and_truncates_choices(self):
-        long_choice = "Super long choice name that should be truncated"
-        q = Question.objects.create(
-            text="T", choices=[long_choice, "Short"], tags=["tag1", "tag2"], user=self.user
-        )
-
-        url = reverse("polls:question_list")
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Tags: tag1, tag2")
-        from django.utils.text import Truncator
-        truncated = Truncator(long_choice).chars(20)
-        self.assertContains(response, truncated)
-
 
 class QuestionCreateViewTests(TestCase):
     def setUp(self):

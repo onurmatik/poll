@@ -75,16 +75,7 @@
           {% endif %}
           {% if q.choices %}
             {% if q.context %} | {% endif %}
-            {% with first=q.choices|slice:":3" %}
-            Choices:
-            {% for choice in first %}
-              {{ choice|truncatechars:20 }}{% if not forloop.last %}, {% endif %}
-            {% endfor %}{% if q.choices|length > 3 %}, ...{% endif %}
-            {% endwith %}
-          {% endif %}
-          {% if q.tags %}
-            {% if q.context or q.choices %} | {% endif %}
-            Tags: {{ q.tags|join:", " }}
+            Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
         </div>
       </div>
@@ -128,16 +119,7 @@
           {% endif %}
           {% if q.choices %}
             {% if q.context %} | {% endif %}
-            {% with first=q.choices|slice:":3" %}
-            Choices:
-            {% for choice in first %}
-              {{ choice|truncatechars:20 }}{% if not forloop.last %}, {% endif %}
-            {% endfor %}{% if q.choices|length > 3 %}, ...{% endif %}
-            {% endwith %}
-          {% endif %}
-          {% if q.tags %}
-            {% if q.context or q.choices %} | {% endif %}
-            Tags: {{ q.tags|join:", " }}
+            Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
         </div>
       </div>
@@ -184,16 +166,7 @@
           {% endif %}
           {% if q.choices %}
             {% if q.context %} | {% endif %}
-            {% with first=q.choices|slice:":3" %}
-            Choices:
-            {% for choice in first %}
-              {{ choice|truncatechars:20 }}{% if not forloop.last %}, {% endif %}
-            {% endfor %}{% if q.choices|length > 3 %}, ...{% endif %}
-            {% endwith %}
-          {% endif %}
-          {% if q.tags %}
-            {% if q.context or q.choices %} | {% endif %}
-            Tags: {{ q.tags|join:", " }}
+            Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
         </div>
       </div>
@@ -231,16 +204,7 @@
           {% endif %}
           {% if q.choices %}
             {% if q.context %} | {% endif %}
-            {% with first=q.choices|slice:":3" %}
-            Choices:
-            {% for choice in first %}
-              {{ choice|truncatechars:20 }}{% if not forloop.last %}, {% endif %}
-            {% endfor %}{% if q.choices|length > 3 %}, ...{% endif %}
-            {% endwith %}
-          {% endif %}
-          {% if q.tags %}
-            {% if q.context or q.choices %} | {% endif %}
-            Tags: {{ q.tags|join:", " }}
+            Choices: {{ q.choices|slice:":3"|join:", " }}{% if q.choices|length > 3 %}, ...{% endif %}
           {% endif %}
         </div>
       </div>
