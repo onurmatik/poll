@@ -9,7 +9,8 @@ from .models import Question, Answer, OpenAIBatch
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ["uuid", "text", "created_by", "tags", "created_at"]
+    list_display = ["uuid", "text", "created_by", "status", "tags", "created_at"]
+    list_filter = ["status"]
     actions = [
         'submit_openai_batch',
     ]
